@@ -1,0 +1,87 @@
+# =========================
+# Dependencies
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# =========================
+# Build outputs
+# =========================
+dist/
+dist-ssr/
+build/
+out/
+coverage/
+
+# =========================
+# Vite
+# =========================
+.vite/
+
+# =========================
+# Environment files
+# (mantenha .env.example versionado)
+# =========================
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+
+# =========================
+# OS / Editor
+# =========================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+.idea/
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# =========================
+# TypeScript
+# =========================
+*.tsbuildinfo
+
+# =========================
+# Cache / tooling
+# =========================
+.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+.turbo/
+.nx/
+.rush/
+.pnp.*
+.pnp.cjs
+
+# =========================
+# Testing
+# =========================
+playwright-report/
+test-results/
+cypress/videos/
+cypress/screenshots/
+
+# =========================
+# Misc
+# =========================
+*.local
+*.tmp
+*.swp
+*.swo
