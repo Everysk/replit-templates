@@ -95,7 +95,7 @@ PAYLOAD="$(jq --arg data "$DATA_BASE64" '. + {data: $data}' "$CONFIG_FILE")"
 ###############################################################################
 # Deploy via API
 ###############################################################################
-API_URL="https://${EVERYSK_API_URL_DOMAIN}/v2/managed_user_apps"
+API_URL="https://${EVERYSK_API_URL_DOMAIN}/v2/apps"
 echo "Deploying to $API_URL ..."
 
 HTTP_RESPONSE="$(curl -s -w "\n%{http_code}" -X POST "$API_URL" \
