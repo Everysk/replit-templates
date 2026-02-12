@@ -2,6 +2,7 @@ import { defineConfig, loadEnv } from "vite";
 
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { viteSingleFile } from "vite-plugin-singlefile";
 
 import { createDevServerProxy } from "./vite/serverProxy";
 import { envVarsLocationPlugin } from "./vite/plugins/envVarsLocation";
@@ -20,6 +21,8 @@ export default defineConfig(({ mode, command }) => {
     build: {
       outDir: "./dist",
       emptyOutDir: true,
+      cssCodeSplit: false,
+      assetsInlineLimit: 100000000,
     },
 
     server: {
@@ -38,6 +41,7 @@ export default defineConfig(({ mode, command }) => {
       tailwindcss(),
       envVarsLocationPlugin(),
       serveDevAppConfigPlugin(),
+      viteSingleFile(),
     ],
   };
 });

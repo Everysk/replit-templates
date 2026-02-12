@@ -1,27 +1,29 @@
 name: Deploy App
 
 on:
-  # push:
-    # branches: [dev]
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    env:
-      EVERYSK_API_URL_DOMAIN: ${{ vars.EVERYSK_API_URL_DOMAIN || 'api.everysk.com' }}
-      EVERYSK_API_SID: ${{ secrets.EVERYSK_API_SID }}
-      EVERYSK_API_TOKEN: ${{ secrets.EVERYSK_API_TOKEN }}
+    permissions:
+      contents: 'write'
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
         with:
-          node-version: "20"
+          fetch-depth: 0
 
-      - name: Deploy
-        run: ./scripts/deploy.sh
+      - name: Build Image
+        run: |
+          docker build --rm -f ./docker/Dockerfile --target everysk_app_deploy -t everysk_app_deploy:latest .
+
+      - name: Deploy App
+        run: |
+          docker run --rm \
+            --env EVERYSK_API_URL=${{ vars.EVERYSK_API_URL || 'https://api.everysk.com/v2' }} \
+            --env EVERYSK_API_SID=${{ secrets.EVERYSK_API_SID }} \
+            --env EVERYSK_API_TOKEN=${{ secrets.EVERYSK_API_TOKEN }} \
+            --env EVERYSK_MANAGED_DEPLOY=${{ secrets.EVERYSK_MANAGED_DEPLOY }} \
+            everysk_app_deploy:latest
