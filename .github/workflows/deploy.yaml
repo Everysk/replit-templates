@@ -27,5 +27,5 @@ jobs:
             --env EVERYSK_API_URL=${{ vars.EVERYSK_API_URL || 'https://api.everysk.com/v2' }} \
             --env EVERYSK_API_SID=${{ secrets.EVERYSK_API_SID }} \
             --env EVERYSK_API_TOKEN=${{ secrets.EVERYSK_API_TOKEN }} \
-            --env EVERYSK_MANAGED_DEPLOY=${{ secrets.EVERYSK_MANAGED_DEPLOY }} \
+            --env EVERYSK_MANAGED_DEPLOY=True \
             everysk_app_deploy:latest
