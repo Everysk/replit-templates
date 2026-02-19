@@ -26,7 +26,7 @@ export default defineConfig(({ mode, command }) => {
       host: true,
       port: Number(process.env.PORT) || 5173,
       strictPort: true,
-      allowedHosts: "all",
+      allowedHosts: true,
       proxy: command === "serve" ? createDevServerProxy() : undefined,
     },
 
