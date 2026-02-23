@@ -100,16 +100,22 @@ The app includes an operational dashboard (`src/pages/dashboard/`) that shows Ev
 
 ### Key files:
 - `src/pages/dashboard/index.tsx` — Main dashboard page with workspace sections, summary cards, and execution tables
-- `src/hooks/useFetchWorkflows.tsx` — TanStack Query hook for fetching workflows by workspace
-- `src/hooks/useFetchWorkflowExecutions.tsx` — TanStack Query hook for fetching workflow executions by workspace
-- `src/utils/api/workflowList.ts` — API utility functions for listing workflows and executions
-- `src/types/workflow.ts` — TypeScript types for Workflow and WorkflowExecution entities
+- `src/hooks/useFetchWorkflows.tsx` — TanStack Query hook for fetching workflows by workspace (passes `workspace` as direct query param)
+- `src/hooks/useFetchWorkflowExecutions.tsx` — TanStack Query hook using `useQueries` to fetch executions per-workflow via `GET /workflows/{id}/workflow_executions`
+- `src/utils/api/workflowList.ts` — API utility functions for listing workspaces, workflows, and workflow executions
+- `src/types/workflow.ts` — TypeScript types for Workspace, Workflow, and WorkflowExecution entities
+
+### API Endpoints Used:
+- `GET /workspaces` — List all workspaces
+- `GET /workflows?workspace={name}` — List workflows in a workspace (workspace must be a direct query param, NOT inside a JSON `query` string)
+- `GET /workflows/{workflow_id}/workflow_executions` — List executions for a specific workflow (the standalone `/workflow_executions` endpoint does NOT exist)
 
 ### Features:
-- Add multiple workspaces to monitor simultaneously
-- Summary cards showing execution counts (total, completed, failed, running, pending)
-- Workflow table with latest execution status per workflow
-- Recent executions table with timestamps, duration, and status chips
+- Auto-loads all workspaces from the user's API credentials
+- Checkbox-based workspace selection to filter visible sections
+- Summary cards showing execution counts (total, succeeded, failed, running, pending)
+- Workflow table with latest execution run_status per workflow
+- Recent executions table with timestamps, duration, trigger, status/run_status chips
 - Configurable auto-refresh (10s, 30s, 1m, 5m, or off)
 
 ## Running

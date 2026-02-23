@@ -5,7 +5,6 @@ import type { DefaultObject } from "../../types/defaultObject";
 
 const workspacesBaseUrl = "workspaces";
 const workflowsBaseUrl = "workflows";
-const executionsBaseUrl = "workflow_executions";
 
 export const getWorkspaces = async (api: AxiosInstance): Promise<Workspace[]> => {
     try {
@@ -24,10 +23,11 @@ export const getWorkspaces = async (api: AxiosInstance): Promise<Workspace[]> =>
     }
 };
 
-export const getWorkflows = async (api: AxiosInstance, query: DefaultObject): Promise<Workflow[]> => {
-    const params: DefaultObject = {
-        ...(query ? { query: JSON.stringify(query) } : {}),
-    };
+export const getWorkflows = async (api: AxiosInstance, workspace?: string): Promise<Workflow[]> => {
+    const params: Record<string, string> = {};
+    if (workspace) {
+        params.workspace = workspace;
+    }
 
     try {
         const response: AxiosResponse<DefaultObject> = await api.get(workflowsBaseUrl, { params });
@@ -45,13 +45,11 @@ export const getWorkflows = async (api: AxiosInstance, query: DefaultObject): Pr
     }
 };
 
-export const getWorkflowExecutions = async (api: AxiosInstance, query: DefaultObject): Promise<WorkflowExecution[]> => {
-    const params: DefaultObject = {
-        ...(query ? { query: JSON.stringify(query) } : {}),
-    };
-
+export const getWorkflowExecutions = async (api: AxiosInstance, workflowId: string): Promise<WorkflowExecution[]> => {
     try {
-        const response: AxiosResponse<DefaultObject> = await api.get(executionsBaseUrl, { params });
+        const response: AxiosResponse<DefaultObject> = await api.get(
+            `${workflowsBaseUrl}/${workflowId}/workflow_executions`
+        );
         return response.data?.workflow_executions ?? [];
     } catch (error: unknown) {
         if (isAxiosError<DefaultObject>(error)) {

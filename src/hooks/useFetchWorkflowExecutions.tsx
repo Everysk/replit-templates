@@ -1,61 +1,65 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 
 import useAxios from "./useAxios";
 import useAppAlert from "./useAppAlert";
-import { buildApiQueryParams } from "../utils/apiQuery";
 import { getWorkflowExecutions } from "../utils/api/workflowList";
 import type { WorkflowExecution } from "../types/workflow";
-import type { EntityQueryOptions, FetchEntityParams } from "../types/entityQuery";
 
-export type FetchWorkflowExecutionsProps = Omit<FetchEntityParams<WorkflowExecution>, "id"> & {
+export interface UseFetchWorkflowExecutionsProps {
+    workflowIds: string[];
     enabled?: boolean;
-};
-
-const defaultQueryOptions: EntityQueryOptions<WorkflowExecution[]> = {
-    refetchOnMount: "always",
-    staleTime: 0,
-    gcTime: 0,
-};
+    refetchInterval?: number | false;
+    staleTime?: number;
+}
 
 const useFetchWorkflowExecutions = ({
-    filters = [],
-    order = [],
-    projection = "",
-    queryOptions = defaultQueryOptions,
+    workflowIds,
     enabled = true,
-}: FetchWorkflowExecutionsProps) => {
+    refetchInterval = false,
+    staleTime = 10000,
+}: UseFetchWorkflowExecutionsProps) => {
     const { api } = useAxios();
     const { showAlert } = useAppAlert();
 
-    const queryFilter = buildApiQueryParams({ filters, order, projection });
-    const queryKey = [
-        "workflow_executions",
-        ...filters.flatMap((filter) => filter.value),
-    ];
-
-    const query = useQuery<WorkflowExecution[]>({
-        queryKey,
-        queryFn: async () => {
-            return getWorkflowExecutions(api, queryFilter);
-        },
-        enabled,
-        ...queryOptions,
+    const queries = useQueries({
+        queries: workflowIds.map((wfId) => ({
+            queryKey: ["workflow_executions", wfId],
+            queryFn: async () => getWorkflowExecutions(api, wfId),
+            enabled,
+            refetchInterval,
+            staleTime,
+        })),
     });
 
-    useEffect(() => {
-        if (!query.error) return;
+    const firstError = queries.find((q) => q.error)?.error;
 
+    useEffect(() => {
+        if (!firstError) return;
         showAlert({
             severity: "error",
-            message: query.error.message,
+            message: firstError.message,
         });
-    }, [query.error, showAlert]);
+    }, [firstError, showAlert]);
+
+    const allExecutions: WorkflowExecution[] = useMemo(() => {
+        return queries.flatMap((q) => q.data ?? []);
+    }, [queries]);
+
+    const isLoading = queries.some((q) => q.isLoading);
+    const isFetching = queries.some((q) => q.isFetching);
+
+    const refetchAll = () => {
+        queries.forEach((q) => q.refetch());
+    };
 
     return {
-        ...query,
-        queryKey,
+        data: allExecutions,
+        isLoading,
+        isFetching,
+        refetch: refetchAll,
+        queries,
     };
 };
 

@@ -14,11 +14,15 @@ export interface Workflow {
     workspace: string;
     description: string;
     tags: string[];
-    created: string;
-    updated: string;
-    level: string;
-    link_uid: string;
+    status: string;
+    created: number;
+    updated: number;
     version: string;
+    trigger_enabled: boolean;
+    trigger_type: string;
+    trigger_config: Record<string, unknown>;
+    starter_worker_id: string;
+    ender_worker_id: string;
     [key: string]: unknown;
 }
 
@@ -27,19 +31,26 @@ export interface WorkflowExecution {
     workflow_id: string;
     workflow_name: string;
     workspace: string;
+    status: string;
     run_status: WorkflowExecutionStatus;
-    started: string;
-    finished: string;
-    parameters: Record<string, unknown>;
-    error: string;
-    created: string;
-    updated: string;
+    duration: number;
+    real_execution_time: number;
+    total_execution_time: number;
+    started: number;
+    created: number;
+    updated: number;
+    trigger: string;
+    started_worker_id: string;
+    ender_worker_id: string;
+    ender_worker_execution_id: string;
+    resume: unknown;
+    version: string;
     [key: string]: unknown;
 }
 
 export type WorkflowExecutionStatus =
     | "RUNNING"
-    | "COMPLETED"
+    | "SUCCEEDED"
     | "FAILED"
     | "PENDING"
     | "CANCELLED"

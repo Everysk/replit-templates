@@ -4,44 +4,35 @@ import { useQuery } from "@tanstack/react-query";
 
 import useAxios from "./useAxios";
 import useAppAlert from "./useAppAlert";
-import { buildApiQueryParams } from "../utils/apiQuery";
 import { getWorkflows } from "../utils/api/workflowList";
 import type { Workflow } from "../types/workflow";
-import type { EntityQueryOptions, FetchEntityParams } from "../types/entityQuery";
 
-export type FetchWorkflowsProps = Omit<FetchEntityParams<Workflow>, "id"> & {
+export interface UseFetchWorkflowsProps {
+    workspace?: string;
     enabled?: boolean;
-};
-
-const defaultQueryOptions: EntityQueryOptions<Workflow[]> = {
-    refetchOnMount: "always",
-    staleTime: 0,
-    gcTime: 0,
-};
+    refetchInterval?: number | false;
+    staleTime?: number;
+}
 
 const useFetchWorkflows = ({
-    filters = [],
-    order = [],
-    projection = "",
-    queryOptions = defaultQueryOptions,
+    workspace,
     enabled = true,
-}: FetchWorkflowsProps) => {
+    refetchInterval = false,
+    staleTime = 10000,
+}: UseFetchWorkflowsProps) => {
     const { api } = useAxios();
     const { showAlert } = useAppAlert();
 
-    const queryFilter = buildApiQueryParams({ filters, order, projection });
-    const queryKey = [
-        "workflows",
-        ...filters.flatMap((filter) => filter.value),
-    ];
+    const queryKey = ["workflows", workspace ?? "all"];
 
     const query = useQuery<Workflow[]>({
         queryKey,
         queryFn: async () => {
-            return getWorkflows(api, queryFilter);
+            return getWorkflows(api, workspace);
         },
         enabled,
-        ...queryOptions,
+        refetchInterval,
+        staleTime,
     });
 
     useEffect(() => {

@@ -35,14 +35,13 @@ import useFetchWorkspaces from "../../hooks/useFetchWorkspaces";
 import useFetchWorkflows from "../../hooks/useFetchWorkflows";
 import useFetchWorkflowExecutions from "../../hooks/useFetchWorkflowExecutions";
 import type { WorkflowExecution, WorkflowExecutionStatus } from "../../types/workflow";
-import type { FilterClause } from "../../types/entityQuery";
-
 const STATUS_CONFIG: Record<string, { color: "success" | "error" | "warning" | "info" | "default"; icon: ReactNode; label: string }> = {
-    COMPLETED: { color: "success", icon: <CheckCircleIcon fontSize="small" />, label: "Completed" },
+    SUCCEEDED: { color: "success", icon: <CheckCircleIcon fontSize="small" />, label: "Succeeded" },
     FAILED: { color: "error", icon: <ErrorIcon fontSize="small" />, label: "Failed" },
     RUNNING: { color: "warning", icon: <PlayCircleIcon fontSize="small" />, label: "Running" },
     PENDING: { color: "info", icon: <HourglassEmptyIcon fontSize="small" />, label: "Pending" },
     CANCELLED: { color: "default", icon: <CancelIcon fontSize="small" />, label: "Cancelled" },
+    COMPLETED: { color: "success", icon: <CheckCircleIcon fontSize="small" />, label: "Completed" },
 };
 
 const getStatusConfig = (status: WorkflowExecutionStatus) => {
@@ -60,25 +59,16 @@ const formatDateTime = (dateStr: string | number | undefined | null): string => 
     }
 };
 
-const formatDuration = (started: string | undefined | null, finished: string | undefined | null): string => {
-    if (!started || !finished) return "—";
-    try {
-        const startDate = new Date(started);
-        const endDate = new Date(finished);
-        const diffMs = endDate.getTime() - startDate.getTime();
-        if (diffMs < 0 || isNaN(diffMs)) return "—";
-        if (diffMs < 1000) return `${diffMs}ms`;
-        const seconds = Math.floor(diffMs / 1000);
-        if (seconds < 60) return `${seconds}s`;
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = seconds % 60;
-        if (minutes < 60) return `${minutes}m ${remainingSeconds}s`;
-        const hours = Math.floor(minutes / 60);
-        const remainingMinutes = minutes % 60;
-        return `${hours}h ${remainingMinutes}m`;
-    } catch {
-        return "—";
-    }
+const formatDuration = (seconds: number | undefined | null): string => {
+    if (seconds == null || seconds < 0) return "—";
+    if (seconds < 1) return `${Math.round(seconds * 1000)}ms`;
+    if (seconds < 60) return `${seconds.toFixed(1)}s`;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.round(seconds % 60);
+    if (minutes < 60) return `${minutes}m ${remainingSeconds}s`;
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return `${hours}h ${remainingMinutes}m`;
 };
 
 interface SummaryCardProps {
@@ -295,34 +285,34 @@ interface WorkspaceSectionProps {
 }
 
 const WorkspaceSection = ({ workspace, workspaceGroup, workspaceDescription, refetchInterval }: WorkspaceSectionProps) => {
-    const workspaceFilter: FilterClause[] = useMemo(
-        () => [{ field: "workspace", value: workspace }],
-        [workspace]
-    );
-
     const workflowsQuery = useFetchWorkflows({
-        filters: workspaceFilter,
-        order: ["name asc"],
-        queryOptions: {
-            refetchInterval: refetchInterval || false,
-            staleTime: 10000,
-        },
+        workspace,
+        refetchInterval: refetchInterval || false,
+        staleTime: 10000,
     });
-
-    const executionsQuery = useFetchWorkflowExecutions({
-        filters: workspaceFilter,
-        order: ["created desc"],
-        queryOptions: {
-            refetchInterval: refetchInterval || false,
-            staleTime: 10000,
-        },
-    });
-
-    const isLoading = workflowsQuery.isLoading || executionsQuery.isLoading;
-    const isFetching = workflowsQuery.isFetching || executionsQuery.isFetching;
 
     const workflows = workflowsQuery.data ?? [];
-    const executions = executionsQuery.data ?? [];
+
+    const workflowIds = useMemo(
+        () => workflows.map((wf) => wf.id),
+        [workflows]
+    );
+
+    const executionsResult = useFetchWorkflowExecutions({
+        workflowIds,
+        enabled: workflowIds.length > 0,
+        refetchInterval: refetchInterval || false,
+        staleTime: 10000,
+    });
+
+    const isLoading = workflowsQuery.isLoading || (workflowIds.length > 0 && executionsResult.isLoading);
+    const isFetching = workflowsQuery.isFetching || executionsResult.isFetching;
+
+    const executions = executionsResult.data;
+
+    const sortedExecutions = useMemo(() => {
+        return [...executions].sort((a, b) => (b.created ?? 0) - (a.created ?? 0));
+    }, [executions]);
 
     const latestExecutionByWorkflow = useMemo(() => {
         const map = new Map<string, WorkflowExecution>();
@@ -330,7 +320,7 @@ const WorkspaceSection = ({ workspace, workspaceGroup, workspaceDescription, ref
             const wfId = exec.workflow_id;
             if (!wfId) continue;
             const existing = map.get(wfId);
-            if (!existing || new Date(exec.created) > new Date(existing.created)) {
+            if (!existing || exec.created > existing.created) {
                 map.set(wfId, exec);
             }
         }
@@ -338,7 +328,7 @@ const WorkspaceSection = ({ workspace, workspaceGroup, workspaceDescription, ref
     }, [executions]);
 
     const statusCounts = useMemo(() => {
-        const counts = { total: executions.length, COMPLETED: 0, FAILED: 0, RUNNING: 0, PENDING: 0, CANCELLED: 0, OTHER: 0 };
+        const counts = { total: executions.length, SUCCEEDED: 0, FAILED: 0, RUNNING: 0, PENDING: 0, CANCELLED: 0, OTHER: 0 };
         for (const exec of executions) {
             const status = exec.run_status;
             if (status in counts) {
@@ -352,8 +342,8 @@ const WorkspaceSection = ({ workspace, workspaceGroup, workspaceDescription, ref
 
     const handleRefresh = useCallback(() => {
         workflowsQuery.refetch();
-        executionsQuery.refetch();
-    }, [workflowsQuery, executionsQuery]);
+        executionsResult.refetch();
+    }, [workflowsQuery, executionsResult]);
 
     return (
         <Paper variant="outlined" sx={{ mb: 3, overflow: "hidden" }} data-testid={`section-workspace-${workspace}`}>
@@ -405,11 +395,11 @@ const WorkspaceSection = ({ workspace, workspaceGroup, workspaceDescription, ref
                             testId={`card-total-${workspace}`}
                         />
                         <SummaryCard
-                            title="Completed"
-                            value={statusCounts.COMPLETED}
+                            title="Succeeded"
+                            value={statusCounts.SUCCEEDED}
                             color="#2e7d32"
                             icon={<CheckCircleIcon />}
-                            testId={`card-completed-${workspace}`}
+                            testId={`card-succeeded-${workspace}`}
                         />
                         <SummaryCard
                             title="Failed"
@@ -449,7 +439,8 @@ const WorkspaceSection = ({ workspace, workspaceGroup, workspaceDescription, ref
                                 <TableHead>
                                     <TableRow>
                                         <TableCell sx={{ fontWeight: 600 }}>Workflow</TableCell>
-                                        <TableCell sx={{ fontWeight: 600 }}>Latest Status</TableCell>
+                                        <TableCell sx={{ fontWeight: 600 }}>Latest Run Status</TableCell>
+                                        <TableCell sx={{ fontWeight: 600 }}>Trigger</TableCell>
                                         <TableCell sx={{ fontWeight: 600 }}>Started</TableCell>
                                         <TableCell sx={{ fontWeight: 600 }}>Duration</TableCell>
                                         <TableCell sx={{ fontWeight: 600 }}>Execution ID</TableCell>
@@ -498,17 +489,22 @@ const WorkspaceSection = ({ workspace, workspaceGroup, workspaceDescription, ref
                                                 </TableCell>
                                                 <TableCell>
                                                     <Typography variant="caption">
+                                                        {latestExec?.trigger ?? "—"}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Typography variant="caption">
                                                         {formatDateTime(latestExec?.started ?? latestExec?.created)}
                                                     </Typography>
                                                 </TableCell>
                                                 <TableCell>
                                                     <Typography variant="caption">
-                                                        {latestExec ? formatDuration(latestExec.started, latestExec.finished) : "—"}
+                                                        {latestExec ? formatDuration(latestExec.duration) : "—"}
                                                     </Typography>
                                                 </TableCell>
                                                 <TableCell>
                                                     <Typography variant="caption" sx={{ fontFamily: "monospace", fontSize: "0.75rem" }}>
-                                                        {latestExec?.id ? latestExec.id.substring(0, 12) + "..." : "—"}
+                                                        {latestExec?.id ? latestExec.id.substring(0, 16) + "..." : "—"}
                                                     </Typography>
                                                 </TableCell>
                                             </TableRow>
@@ -519,7 +515,7 @@ const WorkspaceSection = ({ workspace, workspaceGroup, workspaceDescription, ref
                         </TableContainer>
                     )}
 
-                    {executions.length > 0 && (
+                    {sortedExecutions.length > 0 && (
                         <Box sx={{ mt: 3 }}>
                             <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
                                 Recent Executions
@@ -531,15 +527,16 @@ const WorkspaceSection = ({ workspace, workspaceGroup, workspaceDescription, ref
                                             <TableCell sx={{ fontWeight: 600 }}>Execution ID</TableCell>
                                             <TableCell sx={{ fontWeight: 600 }}>Workflow</TableCell>
                                             <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                                            <TableCell sx={{ fontWeight: 600 }}>Run Status</TableCell>
+                                            <TableCell sx={{ fontWeight: 600 }}>Trigger</TableCell>
                                             <TableCell sx={{ fontWeight: 600 }}>Started</TableCell>
-                                            <TableCell sx={{ fontWeight: 600 }}>Finished</TableCell>
                                             <TableCell sx={{ fontWeight: 600 }}>Duration</TableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
-                                        {executions.slice(0, 20).map((exec) => {
-                                            const statusConf = getStatusConfig(exec.run_status);
-                                            const wf = workflows.find((w) => w.id === exec.workflow_id);
+                                        {sortedExecutions.slice(0, 20).map((exec) => {
+                                            const runStatusConf = getStatusConfig(exec.run_status);
+                                            const statusConf = getStatusConfig(exec.status);
 
                                             return (
                                                 <TableRow
@@ -549,12 +546,12 @@ const WorkspaceSection = ({ workspace, workspaceGroup, workspaceDescription, ref
                                                 >
                                                     <TableCell>
                                                         <Typography variant="caption" sx={{ fontFamily: "monospace", fontSize: "0.75rem" }}>
-                                                            {exec.id ? exec.id.substring(0, 16) : "—"}
+                                                            {exec.id ? exec.id.substring(0, 20) : "—"}
                                                         </Typography>
                                                     </TableCell>
                                                     <TableCell>
                                                         <Typography variant="body2">
-                                                            {exec.workflow_name || wf?.name || exec.workflow_id || "—"}
+                                                            {exec.workflow_name || exec.workflow_id || "—"}
                                                         </Typography>
                                                     </TableCell>
                                                     <TableCell>
@@ -564,8 +561,23 @@ const WorkspaceSection = ({ workspace, workspaceGroup, workspaceDescription, ref
                                                             color={statusConf.color}
                                                             size="small"
                                                             variant="outlined"
-                                                            data-testid={`status-execution-${exec.id}`}
+                                                            data-testid={`status-exec-status-${exec.id}`}
                                                         />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Chip
+                                                            icon={runStatusConf.icon}
+                                                            label={runStatusConf.label}
+                                                            color={runStatusConf.color}
+                                                            size="small"
+                                                            variant="outlined"
+                                                            data-testid={`status-exec-run-${exec.id}`}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Typography variant="caption">
+                                                            {exec.trigger ?? "—"}
+                                                        </Typography>
                                                     </TableCell>
                                                     <TableCell>
                                                         <Typography variant="caption">
@@ -574,12 +586,7 @@ const WorkspaceSection = ({ workspace, workspaceGroup, workspaceDescription, ref
                                                     </TableCell>
                                                     <TableCell>
                                                         <Typography variant="caption">
-                                                            {formatDateTime(exec.finished)}
-                                                        </Typography>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Typography variant="caption">
-                                                            {formatDuration(exec.started, exec.finished)}
+                                                            {formatDuration(exec.duration)}
                                                         </Typography>
                                                     </TableCell>
                                                 </TableRow>
@@ -588,9 +595,9 @@ const WorkspaceSection = ({ workspace, workspaceGroup, workspaceDescription, ref
                                     </TableBody>
                                 </Table>
                             </TableContainer>
-                            {executions.length > 20 && (
+                            {sortedExecutions.length > 20 && (
                                 <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
-                                    Showing 20 of {executions.length} executions
+                                    Showing 20 of {sortedExecutions.length} executions
                                 </Typography>
                             )}
                         </Box>
