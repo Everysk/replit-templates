@@ -122,6 +122,12 @@ The app includes an operational dashboard (`src/pages/dashboard/`) that shows Ev
 - Dev server: `bash scripts/check-env.sh && npm run dev` (port 5000) — validates secrets before starting Vite
 - Build: `npm run build` (outputs to `dist/`)
 - Deploy: Use the "Deploy App" workflow in Replit (runs `scripts/replit-deploy.sh`)
+  - Automatically installs Python dependencies from `requirements.txt` before building
   - Builds the frontend, packages the `dist/` directory, and deploys to the Everysk API
   - Equivalent to the GitHub Actions workflow in `.github/workflows/deploy.yaml`
-  - Requires `EVERYSK_API_SID` and `EVERYSK_API_TOKEN` secrets
+  - Requires `EVERYSK_API_SID`, `EVERYSK_API_TOKEN`, and `EVERYSK_APP_NAME` secrets
+
+## Deploy Prerequisites
+- **Python dependencies** (`requirements.txt`): `requests`, `python-dotenv`, `everysk-lib`, `httpx` — installed automatically by `scripts/replit-deploy.sh` before each deploy
+- **Node build**: `npm run build` must complete without errors. Use `ReactElement` (not `ReactNode`) for MUI `Chip` `icon` props and similar typed element props
+- If adding new Python dependencies needed by deploy scripts, add them to `requirements.txt` — the deploy script runs `pip install -q -r requirements.txt` automatically
