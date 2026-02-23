@@ -1,10 +1,8 @@
 {
-  "name": "MY NEW APP",
+  "name": "",
   "description": "",
   "env_vars": {},
   "tags": [],
   "version": "v1",
-  "target_users": {},
-  "created": 1771855301,
-  "updated": 1771855301
+  "target_users": {}
 }
