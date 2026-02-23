@@ -41,6 +41,31 @@ Get your credentials from: https://everysk.com/account
 3. Add `EVERYSK_API_TOKEN` with your API token value
 4. Click **Run** — the app validates secrets on startup and will tell you if anything is missing
 
+## AI Integration (Anthropic Claude)
+- **Provider**: Anthropic via Replit AI Integrations (no personal API key needed, billed to Replit credits)
+- **SDK**: `@anthropic-ai/sdk`
+- **Environment Variables** (auto-configured):
+  - `AI_INTEGRATIONS_ANTHROPIC_BASE_URL`
+  - `AI_INTEGRATIONS_ANTHROPIC_API_KEY`
+- **Available Models**: claude-opus-4-6, claude-sonnet-4-6, claude-haiku-4-5
+- **Reference Files**: `.replit_integration_files/` contains template code for chat routes, batch processing, and storage patterns
+
+### Usage Example
+```typescript
+import Anthropic from "@anthropic-ai/sdk";
+
+const anthropic = new Anthropic({
+  apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY,
+  baseURL: process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL,
+});
+
+const message = await anthropic.messages.create({
+  model: "claude-sonnet-4-6",
+  max_tokens: 1024,
+  messages: [{ role: "user", content: "Hello!" }],
+});
+```
+
 ## Running
 - Dev server: `npm run dev` (port 5000)
 - Build: `npm run build` (outputs to `dist/`)

@@ -1,6 +1,7 @@
-modules = ["nodejs-20", "bash", "web"]
+modules = ["nodejs-20", "python-3.12", "bash"]
 [agent]
 expertMode = true
+integrations = ["javascript_anthropic_ai_integrations:2.0.0"]
 
 [nix]
 channel = "stable-25_05"
@@ -37,7 +38,17 @@ outputType = "webview"
 localPort = 5000
 externalPort = 80
 
+[[ports]]
+localPort = 5000
+externalPort = 5000
+
 [deployment]
-deploymentTarget = "static"
+deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
 publicDir = "dist"
+run = ["node", "./dist/index.cjs"]
+
+[userenv]
+
+[userenv.shared]
+PORT = "5000"
