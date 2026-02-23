@@ -96,15 +96,7 @@ const message = await anthropic.messages.create({
 - Always load the **find-skills** skill when the user asks about discovering new capabilities or extending functionality.
 - These rules apply to **every conversation** — not just the first one. On every new conversation or fresh import, re-read this section and follow the skill requirements.
 
-## Dashboard Feature
-The app includes a management dashboard (`src/pages/dashboard/`) for creating and managing portfolios and datastores across workspaces.
-
 ### Key files:
-- `src/pages/dashboard/index.tsx` — Main dashboard page with workspace selector and two side-by-side panels
-- `src/pages/dashboard/PortfolioPanel.tsx` — Portfolio list with create/delete operations
-- `src/pages/dashboard/PortfolioCreateDialog.tsx` — Dialog for creating portfolios with securities table
-- `src/pages/dashboard/DatastorePanel.tsx` — Datastore list with create/delete operations
-- `src/pages/dashboard/DatastoreCreateDialog.tsx` — Dialog for creating datastores with table data editor
 - `src/components/WorkspaceSelector.tsx` — Reusable workspace dropdown selector
 - `src/hooks/useFetchPortfolio.tsx` — TanStack Query hook for fetching portfolios
 - `src/hooks/usePortfolioMutations.tsx` — Mutation hook for portfolio CRUD
@@ -120,14 +112,6 @@ The app includes a management dashboard (`src/pages/dashboard/`) for creating an
 - `GET /datastores` — List datastores (with workspace filter)
 - `POST /datastores` — Create a datastore
 - `DELETE /datastores/{id}` — Delete a datastore
-
-### Features:
-- Workspace dropdown selector that auto-selects the first workspace
-- Portfolio panel: list, create (with name, currency, date, description, securities table), delete
-- Datastore panel: list, create (with name, description, tabular data editor with editable headers/rows/columns), delete
-- Responsive layout: side-by-side on desktop, stacked on mobile
-- Loading skeletons, empty states, and error handling throughout
-- All interactive elements have `data-testid` attributes for testing
 
 ## Running
 - Dev server: `bash scripts/check-env.sh && npm run dev` (port 5000) — validates secrets before starting Vite
