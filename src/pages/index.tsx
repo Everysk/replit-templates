@@ -1,13 +1,13 @@
 import { Router, Switch, Route } from "wouter";
 import { useHashLocation } from "wouter/use-hash-location";
 
-import Dashboard from "./dashboard";
+import Home from "./home";
 
 const Pages = () => {
     return (
         <Router hook={useHashLocation}>
             <Switch>
-                <Route path="/" component={Dashboard}></Route>
+                <Route path="/" component={Home}></Route>
             </Switch>
         </Router>
     );
