@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, type ReactNode } from "react";
+import { useState, useMemo, useCallback, type ReactElement } from "react";
 
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
@@ -35,7 +35,7 @@ import useFetchWorkspaces from "../../hooks/useFetchWorkspaces";
 import useFetchWorkflows from "../../hooks/useFetchWorkflows";
 import useFetchWorkflowExecutions from "../../hooks/useFetchWorkflowExecutions";
 import type { WorkflowExecution, WorkflowExecutionStatus } from "../../types/workflow";
-const STATUS_CONFIG: Record<string, { color: "success" | "error" | "warning" | "info" | "default"; icon: ReactNode; label: string }> = {
+const STATUS_CONFIG: Record<string, { color: "success" | "error" | "warning" | "info" | "default"; icon: ReactElement; label: string }> = {
     SUCCEEDED: { color: "success", icon: <CheckCircleIcon fontSize="small" />, label: "Succeeded" },
     FAILED: { color: "error", icon: <ErrorIcon fontSize="small" />, label: "Failed" },
     RUNNING: { color: "warning", icon: <PlayCircleIcon fontSize="small" />, label: "Running" },
@@ -45,7 +45,7 @@ const STATUS_CONFIG: Record<string, { color: "success" | "error" | "warning" | "
 };
 
 const getStatusConfig = (status: WorkflowExecutionStatus) => {
-    return STATUS_CONFIG[status] ?? { color: "default" as const, icon: <HourglassEmptyIcon fontSize="small" />, label: status };
+    return STATUS_CONFIG[status] ?? { color: "default" as const, icon: <HourglassEmptyIcon fontSize="small" /> as ReactElement, label: status };
 };
 
 const formatDateTime = (dateStr: string | number | undefined | null): string => {
@@ -75,7 +75,7 @@ interface SummaryCardProps {
     title: string;
     value: number;
     color: string;
-    icon: ReactNode;
+    icon: ReactElement;
     testId: string;
 }
 
