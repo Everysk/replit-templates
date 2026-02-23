@@ -72,9 +72,30 @@ const message = await anthropic.messages.create({
 
 - **Always read `replit.md` before starting or restarting any workflow.** This file contains required secrets, setup steps, and project context that must be reviewed before running the app. Do not start workflows blindly.
 - **On first run / initial setup:** Before starting any workflow, verify that the required secrets (`EVERYSK_API_SID`, `EVERYSK_API_TOKEN`, and `EVERYSK_APP_NAME`) are configured. If they are not set, prompt the user to add them in the Secrets tab before attempting to start the app. Do not start workflows without these secrets — the app will fail with a clear error from `scripts/check-env.sh`.
-- **Always use the brainstorming skill** before any creative work — creating features, building components, adding functionality, or modifying behavior. Explore user intent, requirements, and design before implementation.
-- **Always use Everysk skills** (`everysk-lib-sdk`, `everysk-worker-builder`, `everysk-mcp`) when working with Everysk platform entities, APIs, workers, or workflows.
 - **Always use Anthropic (Claude) via Replit AI Integrations** for any AI/chat features in the app. Use the SDK and environment variables documented above — no personal API key needed.
+
+### Required Agent Skills
+
+The following agent skills **must** be loaded and used in the situations described. These skills are installed in `.agents/skills/` and persist across all copies of this template.
+
+| Skill | Path | When to Use |
+|-------|------|-------------|
+| **brainstorming** | `.agents/skills/brainstorming` | **Before any creative work** — creating features, building components, adding functionality, or modifying behavior. Always explore user intent, requirements, and design before implementation. |
+| **everysk-lib-sdk** | `.agents/skills/everysk/everysk-lib-sdk` | When working with the Everysk Python SDK/API — portfolios, datastores, workflows, and automation. |
+| **everysk-mcp** | `.agents/skills/everysk/everysk-mcp` | When working with Everysk MCP server implementations and integration patterns. |
+| **everysk-worker-builder** | `.agents/skills/everysk/workers-everysk-skill` | When building new workers in the Everysk workers-everysk platform. |
+| **frontend-design** | `.agents/skills/frontend-design` | When building or styling any UI — web components, pages, dashboards, layouts. Produces polished, production-grade interfaces. |
+| **agent-tools** | `.agents/skills/agent-tools` | When running AI apps via inference.sh CLI — image generation, video creation, LLMs, search, 3D, Twitter automation (FLUX, Veo, Gemini, Grok, Claude, etc.). |
+| **pdf** | `.agents/skills/pdf` | When doing anything with PDF files — reading, merging, splitting, creating, filling forms, OCR, watermarks, encryption. |
+| **find-skills** | `.agents/skills/find-skills` | When the user asks "how do I do X" or looks for functionality that might exist as an installable skill. |
+
+**Rules:**
+- Always load the **brainstorming** skill before starting any creative or feature-building work.
+- Always load the relevant **Everysk** skill(s) when the task involves Everysk platform entities, APIs, workers, or workflows.
+- Always load the **frontend-design** skill when building or modifying any UI component or page.
+- Always load the **agent-tools** skill when running AI model inference, image/video generation, or web search via CLI.
+- Always load the **pdf** skill when the user mentions `.pdf` files or asks to produce/manipulate PDFs.
+- Always load the **find-skills** skill when the user asks about discovering new capabilities or extending functionality.
 
 ## Running
 - Dev server: `bash scripts/check-env.sh && npm run dev` (port 5000) — validates secrets before starting Vite
