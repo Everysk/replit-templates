@@ -12,6 +12,9 @@
 - `useFetchDatastore`
 - `useFetchFile`
 - `useFetchPortfolio`
+- `useFetchWorkflowExecutions`
+- `useFetchWorkflows`
+- `useFetchWorkspaces`
 - `useFileMutations`
 - `usePortfolioMutations`
 - `useRunWorkflowMutations`
@@ -58,15 +61,28 @@ This README summarizes the project layout and how to use the React hooks, contex
 
 ## Environment Variables
 
-This app requires two credentials to authenticate with the Everysk API. These are **never** committed to the repository — they must be configured as secrets in your platform.
+### Secrets (add in the Replit Secrets tab or GitHub Actions)
+
+These are **never** committed to the repository.
 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `EVERYSK_API_SID` | **Yes** | Your Everysk API account SID |
 | `EVERYSK_API_TOKEN` | **Yes** | Your Everysk API authentication token |
-| `EVERYSK_API_URL` | No | API endpoint (defaults to `https://api.everysk.com/v2`) |
+| `EVERYSK_APP_NAME` | **Yes** | Your Everysk application name (used during deploy) |
+| `ANTHROPIC_API_KEY` | No | Your Anthropic API key for Claude AI features |
 
-Get your credentials from your [Everysk account dashboard](https://everysk.com/account).
+Get your Everysk credentials from your [Everysk account dashboard](https://everysk.com/account). Get your Anthropic API key from [console.anthropic.com](https://console.anthropic.com).
+
+### Pre-configured variables (set automatically by Replit)
+
+These are set in `.replit` `[userenv.shared]` and do **not** need to be added as secrets.
+
+| Variable | Value | Description |
+|----------|-------|-------------|
+| `PORT` | `5000` | Dev server port |
+| `EVERYSK_API_URL` | `https://api.everysk.com/v2` | Everysk API base URL |
+| `EVERYSK_MANAGED_DEPLOY` | `true` | Enables managed deploy mode |
 
 ### Replit Setup
 
@@ -75,7 +91,9 @@ When you import this template into Replit:
 1. Click the **Secrets** tab (lock icon) in the left sidebar
 2. Add secret: `EVERYSK_API_SID` → paste your API SID
 3. Add secret: `EVERYSK_API_TOKEN` → paste your API token
-4. Click **Run** — the app will start on port 5000
+4. Add secret: `EVERYSK_APP_NAME` → paste your Everysk application name
+5. (Optional) Add secret: `ANTHROPIC_API_KEY` → paste your Anthropic API key (required only for Claude AI features)
+6. Click **Run** — the app will start on port 5000
 
 The app validates these secrets on startup. If they are missing, you will see instructions in the console.
 
@@ -90,7 +108,7 @@ To enable automated deployment via `.github/workflows/deploy.yaml`:
 3. (Optional) Add repository variable:
    - `EVERYSK_API_URL` → custom API endpoint (defaults to `https://api.everysk.com/v2`)
 
-The workflow triggers on push to `dev` or via manual dispatch.
+The workflow triggers via manual dispatch (**Actions** tab → **Deploy App** → **Run workflow**).
 
 ## Getting started (development)
 1. Install dependencies
@@ -99,13 +117,13 @@ The workflow triggers on push to `dev` or via manual dispatch.
    ```
 2. Start dev server
    ```bash
-   npm run dev
+   bash scripts/check-env.sh && npm run dev
    ```
-   Default port: `5173` (configurable via `PORT` env var).
+   Default port: `5000` (set via `PORT` env var; pre-configured by Replit).
 
 3. Open the app
    ```bash
-   "$BROWSER" http://localhost:5173
+   "$BROWSER" http://localhost:5000
    ```
 
 ## Build & preview
@@ -118,6 +136,41 @@ The workflow triggers on push to `dev` or via manual dispatch.
   npm run preview
   ```
 
+
+## Running workflows (Replit)
+
+| Workflow | Command | Description |
+|----------|---------|-------------|
+| **Project** (Run button) | `bash scripts/check-env.sh && npm run dev` | Validates secrets, then starts the dev server on port 5000 |
+| **Deploy App** | `bash scripts/replit-deploy.sh` | Builds the frontend, packages `dist/`, and deploys to the Everysk API |
+
+The "Deploy App" workflow requires `EVERYSK_API_SID`, `EVERYSK_API_TOKEN`, and `EVERYSK_APP_NAME` to be set in Secrets. On first deploy, `EVERYSK_APP_NAME` is written into `config.json` and subsequent deploys use the stored name.
+
+---
+
+## AI Integration (Anthropic Claude)
+
+- **Provider**: Anthropic directly (user's own API key)
+- **SDK**: `@anthropic-ai/sdk`
+- **Secret**: `ANTHROPIC_API_KEY` (add to Replit Secrets — optional, only needed for Claude features)
+- **Available models**: `claude-opus-4-6`, `claude-sonnet-4-6`, `claude-haiku-4-5`
+- **Reference files**: `.replit_integration_files/` — template code for chat routes, batch processing, and storage patterns
+
+```typescript
+import Anthropic from "@anthropic-ai/sdk";
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
+const message = await anthropic.messages.create({
+  model: "claude-sonnet-4-6",
+  max_tokens: 1024,
+  messages: [{ role: "user", content: "Hello!" }],
+});
+```
+
+---
 
 ## Vite notes (short)
 - The project root is used as `envDir`.
@@ -490,6 +543,62 @@ create.mutate({ data: { name: "My datastore", workspace: "ws-1" } });
 update.mutate({ id: "ds-123", data: { name: "Renamed datastore" } });
 
 remove.mutate({ id: "ds-123", workspace: "ws-1" });
+```
+
+---
+
+## useFetchWorkflows
+
+Fetches a list of workflows, optionally filtered by workspace.
+
+**Returns**
+- Standard TanStack Query result (`data`, `isLoading`, `isFetching`, `error`, `refetch`, etc.)
+- `queryKey` for cache invalidation reuse
+- `data` is a `Workflow[]` array
+
+**Example**
+```ts
+const { data: workflows, isLoading } = useFetchWorkflows({
+  workspace: "ws-1",
+  staleTime: 30_000,
+});
+```
+
+---
+
+## useFetchWorkflowExecutions
+
+Fetches executions for one or more workflows in parallel (one query per workflow ID using `useQueries`).
+
+**Returns**
+- `data`: flat `WorkflowExecution[]` merged across all queried workflow IDs
+- `isLoading`: true if any query is loading
+- `isFetching`: true if any query is fetching
+- `refetch()`: triggers refetch on all queries
+- `queries`: raw array of individual query results
+
+**Example**
+```ts
+const { data: executions, isLoading } = useFetchWorkflowExecutions({
+  workflowIds: ["wf-123", "wf-456"],
+  refetchInterval: 5000,
+});
+```
+
+---
+
+## useFetchWorkspaces
+
+Fetches all workspaces. Refetches on every mount (`refetchOnMount: "always"`).
+
+**Returns**
+- Standard TanStack Query result
+- `queryKey` for cache invalidation reuse
+- `data` is a `Workspace[]` array
+
+**Example**
+```ts
+const { data: workspaces, isLoading } = useFetchWorkspaces();
 ```
 
 ---
