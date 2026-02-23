@@ -44,11 +44,10 @@ Get your credentials from: https://everysk.com/account
 5. Click **Run** — the app validates secrets on startup and will tell you if anything is missing
 
 ## AI Integration (Anthropic Claude)
-- **Provider**: Anthropic via Replit AI Integrations (no personal API key needed, billed to Replit credits)
+- **Provider**: Anthropic directly (user's own API key)
 - **SDK**: `@anthropic-ai/sdk`
-- **Environment Variables** (auto-configured):
-  - `AI_INTEGRATIONS_ANTHROPIC_BASE_URL`
-  - `AI_INTEGRATIONS_ANTHROPIC_API_KEY`
+- **Environment Variables**:
+  - `ANTHROPIC_API_KEY` (user-provided, stored in Replit Secrets)
 - **Available Models**: claude-opus-4-6, claude-sonnet-4-6, claude-haiku-4-5
 - **Reference Files**: `.replit_integration_files/` contains template code for chat routes, batch processing, and storage patterns
 
@@ -57,8 +56,7 @@ Get your credentials from: https://everysk.com/account
 import Anthropic from "@anthropic-ai/sdk";
 
 const anthropic = new Anthropic({
-  apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL,
+  apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
 const message = await anthropic.messages.create({
@@ -72,7 +70,7 @@ const message = await anthropic.messages.create({
 
 - **Always read `replit.md` before starting or restarting any workflow.** This file contains required secrets, setup steps, and project context that must be reviewed before running the app. Do not start workflows blindly.
 - **On first run / initial setup:** Before starting any workflow, verify that the required secrets (`EVERYSK_API_SID`, `EVERYSK_API_TOKEN`, and `EVERYSK_APP_NAME`) are configured. If they are not set, prompt the user to add them in the Secrets tab before attempting to start the app. Do not start workflows without these secrets — the app will fail with a clear error from `scripts/check-env.sh`.
-- **Always use Anthropic (Claude) via Replit AI Integrations** for any AI/chat features in the app. Use the SDK and environment variables documented above — no personal API key needed.
+- **Always use Anthropic (Claude) via the user's own API key** for any AI/chat features in the app. Use the SDK and `ANTHROPIC_API_KEY` environment variable documented above.
 
 ### Required Agent Skills
 
