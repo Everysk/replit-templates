@@ -11,6 +11,7 @@ runButton = "Project"
 
 [[workflows.workflow]]
 name = "Project"
+mode = "parallel"
 author = "agent"
 
 [[workflows.workflow.tasks]]
@@ -21,17 +22,13 @@ args = "Start application"
 name = "Start application"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "bash scripts/check-env.sh"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd /home/runner/workspace && npm run dev"
-waitForPort = 5000
-
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "bash scripts/check-env.sh && npm run dev"
+waitForPort = 5000
 
 [[workflows.workflow]]
 name = "Deploy App"
@@ -49,7 +46,7 @@ localPort = 5000
 externalPort = 80
 
 [deployment]
-deploymentTarget = "autoscale"
+deploymentTarget = "static"
 build = ["npm", "run", "build"]
 publicDir = "dist"
 run = ["node", "./dist/index.cjs"]
