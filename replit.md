@@ -66,6 +66,12 @@ const message = await anthropic.messages.create({
 });
 ```
 
+## Agent Preferences
+
+- **Always use the brainstorming skill** before any creative work — creating features, building components, adding functionality, or modifying behavior. Explore user intent, requirements, and design before implementation.
+- **Always use Everysk skills** (`everysk-lib-sdk`, `everysk-worker-builder`, `everysk-mcp`) when working with Everysk platform entities, APIs, workers, or workflows.
+- **Always use Anthropic (Claude) via Replit AI Integrations** for any AI/chat features in the app. Use the SDK and environment variables documented above — no personal API key needed.
+
 ## Running
 - Dev server: `npm run dev` (port 5000)
 - Build: `npm run build` (outputs to `dist/`)
