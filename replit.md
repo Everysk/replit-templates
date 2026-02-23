@@ -95,10 +95,39 @@ The following agent skills **must** be loaded and used in the situations describ
 - Always load the **pdf** skill when the user mentions `.pdf` files or asks to produce/manipulate PDFs.
 - Always load the **find-skills** skill when the user asks about discovering new capabilities or extending functionality.
 
+## Dashboard Feature
+The app includes an operational dashboard (`src/pages/dashboard/`) that shows Everysk workflow execution statuses per workspace.
+
+### Key files:
+- `src/pages/dashboard/index.tsx` — Main dashboard page with workspace sections, summary cards, and execution tables
+- `src/hooks/useFetchWorkflows.tsx` — TanStack Query hook for fetching workflows by workspace (passes `workspace` as direct query param)
+- `src/hooks/useFetchWorkflowExecutions.tsx` — TanStack Query hook using `useQueries` to fetch executions per-workflow via `GET /workflows/{id}/workflow_executions`
+- `src/utils/api/workflowList.ts` — API utility functions for listing workspaces, workflows, and workflow executions
+- `src/types/workflow.ts` — TypeScript types for Workspace, Workflow, and WorkflowExecution entities
+
+### API Endpoints Used:
+- `GET /workspaces` — List all workspaces
+- `GET /workflows?workspace={name}` — List workflows in a workspace (workspace must be a direct query param, NOT inside a JSON `query` string)
+- `GET /workflows/{workflow_id}/workflow_executions` — List executions for a specific workflow (the standalone `/workflow_executions` endpoint does NOT exist)
+
+### Features:
+- Auto-loads all workspaces from the user's API credentials
+- Checkbox-based workspace selection to filter visible sections
+- Summary cards showing execution counts (total, succeeded, failed, running, pending)
+- Workflow table with latest execution run_status per workflow
+- Recent executions table with timestamps, duration, trigger, status/run_status chips
+- Configurable auto-refresh (10s, 30s, 1m, 5m, or off)
+
 ## Running
 - Dev server: `bash scripts/check-env.sh && npm run dev` (port 5000) — validates secrets before starting Vite
 - Build: `npm run build` (outputs to `dist/`)
 - Deploy: Use the "Deploy App" workflow in Replit (runs `scripts/replit-deploy.sh`)
+  - Automatically installs Python dependencies from `requirements.txt` before building
   - Builds the frontend, packages the `dist/` directory, and deploys to the Everysk API
   - Equivalent to the GitHub Actions workflow in `.github/workflows/deploy.yaml`
-  - Requires `EVERYSK_API_SID` and `EVERYSK_API_TOKEN` secrets
+  - Requires `EVERYSK_API_SID`, `EVERYSK_API_TOKEN`, and `EVERYSK_APP_NAME` secrets
+
+## Deploy Prerequisites
+- **Python dependencies** (`requirements.txt`): `requests`, `python-dotenv`, `everysk-lib`, `httpx` — installed automatically by `scripts/replit-deploy.sh` before each deploy
+- **Node build**: `npm run build` must complete without errors. Use `ReactElement` (not `ReactNode`) for MUI `Chip` `icon` props and similar typed element props
+- If adding new Python dependencies needed by deploy scripts, add them to `requirements.txt` — the deploy script runs `pip install -q -r requirements.txt` automatically

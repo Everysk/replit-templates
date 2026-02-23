@@ -66,6 +66,9 @@ else
 fi
 
 echo ""
+echo -e "${BLUE}▶ Installing Python dependencies...${NC}"
+pip install -q -r "${PROJECT_ROOT}/requirements.txt"
+
 echo -e "${BLUE}▶ Running deploy...${NC}"
 python3 "${PROJECT_ROOT}/scripts/deploy.py"
 
