@@ -1,3 +1,1 @@
-export type DefaultObject = {
-    [key: string]: any
-}
+export type DefaultObject = Record<string, unknown>;
