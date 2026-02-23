@@ -69,12 +69,12 @@ const message = await anthropic.messages.create({
 ## Agent Preferences
 
 - **Always read `replit.md` before starting or restarting any workflow.** This file contains required secrets, setup steps, and project context that must be reviewed before running the app. Do not start workflows blindly.
-- **On first run / initial setup:** Before starting any workflow, verify that the required secrets (`EVERYSK_API_SID`, `EVERYSK_API_TOKEN`, and `EVERYSK_APP_NAME`) are configured. If they are not set, prompt the user to add them in the Secrets tab before attempting to start the app. Do not start workflows without these secrets — the app will fail with a clear error from `scripts/check-env.sh`.
+- **On first run / initial setup / import:** Before starting any workflow, use the environment-secrets skill to check whether the required secrets (`EVERYSK_API_SID`, `EVERYSK_API_TOKEN`, and `EVERYSK_APP_NAME`) exist. If any are missing, immediately use `requestEnvVar` to prompt the user for all missing secrets — do NOT just tell the user to add them manually. Always proactively request them programmatically so the user gets an interactive prompt. Do not start workflows without these secrets — the app will fail with a clear error from `scripts/check-env.sh`.
 - **Always use Anthropic (Claude) via the user's own API key** for any AI/chat features in the app. Use the SDK and `ANTHROPIC_API_KEY` environment variable documented above.
 
-### Required Agent Skills
+### Required Agent Skills (MANDATORY — Every Conversation)
 
-The following agent skills **must** be loaded and used in the situations described. These skills are installed in `.agents/skills/` and persist across all copies of this template.
+**IMPORTANT:** The following agent skills **must** be loaded and used in every conversation, every new session, and on every fresh app import. These skills are installed in `.agents/skills/` and persist across all copies of this template. The agent must read and follow the relevant SKILL.md file before performing any work that matches the "When to Use" criteria.
 
 | Skill | Path | When to Use |
 |-------|------|-------------|
@@ -87,36 +87,47 @@ The following agent skills **must** be loaded and used in the situations describ
 | **pdf** | `.agents/skills/pdf` | When doing anything with PDF files — reading, merging, splitting, creating, filling forms, OCR, watermarks, encryption. |
 | **find-skills** | `.agents/skills/find-skills` | When the user asks "how do I do X" or looks for functionality that might exist as an installable skill. |
 
-**Rules:**
-- Always load the **brainstorming** skill before starting any creative or feature-building work.
+**Mandatory Rules (apply to every conversation, including new sessions and fresh imports):**
+- Always load the **brainstorming** skill before starting any creative or feature-building work. Do NOT skip this step.
 - Always load the relevant **Everysk** skill(s) when the task involves Everysk platform entities, APIs, workers, or workflows.
 - Always load the **frontend-design** skill when building or modifying any UI component or page.
 - Always load the **agent-tools** skill when running AI model inference, image/video generation, or web search via CLI.
 - Always load the **pdf** skill when the user mentions `.pdf` files or asks to produce/manipulate PDFs.
 - Always load the **find-skills** skill when the user asks about discovering new capabilities or extending functionality.
+- These rules apply to **every conversation** — not just the first one. On every new conversation or fresh import, re-read this section and follow the skill requirements.
 
 ## Dashboard Feature
-The app includes an operational dashboard (`src/pages/dashboard/`) that shows Everysk workflow execution statuses per workspace.
+The app includes a management dashboard (`src/pages/dashboard/`) for creating and managing portfolios and datastores across workspaces.
 
 ### Key files:
-- `src/pages/dashboard/index.tsx` — Main dashboard page with workspace sections, summary cards, and execution tables
-- `src/hooks/useFetchWorkflows.tsx` — TanStack Query hook for fetching workflows by workspace (passes `workspace` as direct query param)
-- `src/hooks/useFetchWorkflowExecutions.tsx` — TanStack Query hook using `useQueries` to fetch executions per-workflow via `GET /workflows/{id}/workflow_executions`
-- `src/utils/api/workflowList.ts` — API utility functions for listing workspaces, workflows, and workflow executions
-- `src/types/workflow.ts` — TypeScript types for Workspace, Workflow, and WorkflowExecution entities
+- `src/pages/dashboard/index.tsx` — Main dashboard page with workspace selector and two side-by-side panels
+- `src/pages/dashboard/PortfolioPanel.tsx` — Portfolio list with create/delete operations
+- `src/pages/dashboard/PortfolioCreateDialog.tsx` — Dialog for creating portfolios with securities table
+- `src/pages/dashboard/DatastorePanel.tsx` — Datastore list with create/delete operations
+- `src/pages/dashboard/DatastoreCreateDialog.tsx` — Dialog for creating datastores with table data editor
+- `src/components/WorkspaceSelector.tsx` — Reusable workspace dropdown selector
+- `src/hooks/useFetchPortfolio.tsx` — TanStack Query hook for fetching portfolios
+- `src/hooks/usePortfolioMutations.tsx` — Mutation hook for portfolio CRUD
+- `src/hooks/useFetchDatastore.tsx` — TanStack Query hook for fetching datastores
+- `src/hooks/useDatastoreMutations.tsx` — Mutation hook for datastore CRUD
+- `src/hooks/useFetchWorkspaces.tsx` — TanStack Query hook for fetching workspaces
 
 ### API Endpoints Used:
 - `GET /workspaces` — List all workspaces
-- `GET /workflows?workspace={name}` — List workflows in a workspace (workspace must be a direct query param, NOT inside a JSON `query` string)
-- `GET /workflows/{workflow_id}/workflow_executions` — List executions for a specific workflow (the standalone `/workflow_executions` endpoint does NOT exist)
+- `GET /portfolios` — List portfolios (with workspace filter)
+- `POST /portfolios` — Create a portfolio
+- `DELETE /portfolios/{id}` — Delete a portfolio
+- `GET /datastores` — List datastores (with workspace filter)
+- `POST /datastores` — Create a datastore
+- `DELETE /datastores/{id}` — Delete a datastore
 
 ### Features:
-- Auto-loads all workspaces from the user's API credentials
-- Checkbox-based workspace selection to filter visible sections
-- Summary cards showing execution counts (total, succeeded, failed, running, pending)
-- Workflow table with latest execution run_status per workflow
-- Recent executions table with timestamps, duration, trigger, status/run_status chips
-- Configurable auto-refresh (10s, 30s, 1m, 5m, or off)
+- Workspace dropdown selector that auto-selects the first workspace
+- Portfolio panel: list, create (with name, currency, date, description, securities table), delete
+- Datastore panel: list, create (with name, description, tabular data editor with editable headers/rows/columns), delete
+- Responsive layout: side-by-side on desktop, stacked on mobile
+- Loading skeletons, empty states, and error handling throughout
+- All interactive elements have `data-testid` attributes for testing
 
 ## Running
 - Dev server: `bash scripts/check-env.sh && npm run dev` (port 5000) — validates secrets before starting Vite
