@@ -83,3 +83,6 @@ cypress/screenshots/
 *.swp
 *.swo
 *.docx
+.playwright-mcp
+docs/
+
