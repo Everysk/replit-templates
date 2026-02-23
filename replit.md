@@ -95,6 +95,23 @@ The following agent skills **must** be loaded and used in the situations describ
 - Always load the **pdf** skill when the user mentions `.pdf` files or asks to produce/manipulate PDFs.
 - Always load the **find-skills** skill when the user asks about discovering new capabilities or extending functionality.
 
+## Dashboard Feature
+The app includes an operational dashboard (`src/pages/dashboard/`) that shows Everysk workflow execution statuses per workspace.
+
+### Key files:
+- `src/pages/dashboard/index.tsx` — Main dashboard page with workspace sections, summary cards, and execution tables
+- `src/hooks/useFetchWorkflows.tsx` — TanStack Query hook for fetching workflows by workspace
+- `src/hooks/useFetchWorkflowExecutions.tsx` — TanStack Query hook for fetching workflow executions by workspace
+- `src/utils/api/workflowList.ts` — API utility functions for listing workflows and executions
+- `src/types/workflow.ts` — TypeScript types for Workflow and WorkflowExecution entities
+
+### Features:
+- Add multiple workspaces to monitor simultaneously
+- Summary cards showing execution counts (total, completed, failed, running, pending)
+- Workflow table with latest execution status per workflow
+- Recent executions table with timestamps, duration, and status chips
+- Configurable auto-refresh (10s, 30s, 1m, 5m, or off)
+
 ## Running
 - Dev server: `bash scripts/check-env.sh && npm run dev` (port 5000) — validates secrets before starting Vite
 - Build: `npm run build` (outputs to `dist/`)
