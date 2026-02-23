@@ -3,9 +3,11 @@ import { useState, useMemo, useCallback, type ReactNode } from "react";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
+import Checkbox from "@mui/material/Checkbox";
 import Chip from "@mui/material/Chip";
 import CircularProgress from "@mui/material/CircularProgress";
 import FormControl from "@mui/material/FormControl";
+import FormControlLabel from "@mui/material/FormControlLabel";
 import IconButton from "@mui/material/IconButton";
 import InputLabel from "@mui/material/InputLabel";
 import LinearProgress from "@mui/material/LinearProgress";
@@ -18,7 +20,6 @@ import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
-import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import Paper from "@mui/material/Paper";
@@ -29,8 +30,8 @@ import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
 import PlayCircleIcon from "@mui/icons-material/PlayCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import DashboardIcon from "@mui/icons-material/Dashboard";
-import AddIcon from "@mui/icons-material/Add";
 
+import useFetchWorkspaces from "../../hooks/useFetchWorkspaces";
 import useFetchWorkflows from "../../hooks/useFetchWorkflows";
 import useFetchWorkflowExecutions from "../../hooks/useFetchWorkflowExecutions";
 import type { WorkflowExecution, WorkflowExecutionStatus } from "../../types/workflow";
@@ -48,14 +49,14 @@ const getStatusConfig = (status: WorkflowExecutionStatus) => {
     return STATUS_CONFIG[status] ?? { color: "default" as const, icon: <HourglassEmptyIcon fontSize="small" />, label: status };
 };
 
-const formatDateTime = (dateStr: string | undefined | null): string => {
+const formatDateTime = (dateStr: string | number | undefined | null): string => {
     if (!dateStr) return "—";
     try {
-        const date = new Date(dateStr);
-        if (isNaN(date.getTime())) return dateStr;
+        const date = typeof dateStr === "number" ? new Date(dateStr * 1000) : new Date(dateStr);
+        if (isNaN(date.getTime())) return String(dateStr);
         return date.toLocaleString();
     } catch {
-        return dateStr;
+        return String(dateStr);
     }
 };
 
@@ -117,30 +118,36 @@ const REFETCH_INTERVALS = [
 ];
 
 const Dashboard = () => {
-    const [workspaceInput, setWorkspaceInput] = useState("");
-    const [workspaces, setWorkspaces] = useState<string[]>([]);
     const [refetchInterval, setRefetchInterval] = useState(30000);
+    const [deselectedWorkspaces, setDeselectedWorkspaces] = useState<Set<string>>(new Set());
 
-    const handleAddWorkspace = useCallback(() => {
-        const trimmed = workspaceInput.trim();
-        if (trimmed && !workspaces.includes(trimmed)) {
-            setWorkspaces((prev) => [...prev, trimmed]);
-        }
-        setWorkspaceInput("");
-    }, [workspaceInput, workspaces]);
+    const workspacesQuery = useFetchWorkspaces();
+    const allWorkspaces = workspacesQuery.data ?? [];
 
-    const handleRemoveWorkspace = useCallback((ws: string) => {
-        setWorkspaces((prev) => prev.filter((w) => w !== ws));
+    const visibleWorkspaces = useMemo(
+        () => allWorkspaces.filter((ws) => !deselectedWorkspaces.has(ws.name)),
+        [allWorkspaces, deselectedWorkspaces]
+    );
+
+    const handleToggleWorkspace = useCallback((name: string) => {
+        setDeselectedWorkspaces((prev) => {
+            const next = new Set(prev);
+            if (next.has(name)) {
+                next.delete(name);
+            } else {
+                next.add(name);
+            }
+            return next;
+        });
     }, []);
 
-    const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-        if (e.key === "Enter") {
-            e.preventDefault();
-            handleAddWorkspace();
-        }
-    }, [handleAddWorkspace]);
+    const handleSelectAll = useCallback(() => {
+        setDeselectedWorkspaces(new Set());
+    }, []);
 
-    const hasWorkspaces = workspaces.length > 0;
+    const handleDeselectAll = useCallback(() => {
+        setDeselectedWorkspaces(new Set(allWorkspaces.map((ws) => ws.name)));
+    }, [allWorkspaces]);
 
     return (
         <Box sx={{ maxWidth: 1400, mx: "auto", p: 3 }}>
@@ -152,25 +159,10 @@ const Dashboard = () => {
             </Box>
 
             <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
-                    <TextField
-                        data-testid="input-workspace"
-                        label="Add workspace"
-                        size="small"
-                        value={workspaceInput}
-                        onChange={(e) => setWorkspaceInput(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="Enter workspace name"
-                        sx={{ minWidth: 220 }}
-                    />
-                    <IconButton
-                        data-testid="button-add-workspace"
-                        onClick={handleAddWorkspace}
-                        color="primary"
-                        disabled={!workspaceInput.trim()}
-                    >
-                        <AddIcon />
-                    </IconButton>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
+                    <Typography variant="subtitle2" fontWeight={600}>
+                        Workspaces
+                    </Typography>
 
                     <FormControl size="small" sx={{ minWidth: 140 }}>
                         <InputLabel>Auto-refresh</InputLabel>
@@ -188,22 +180,79 @@ const Dashboard = () => {
                         </Select>
                     </FormControl>
 
-                    <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", flex: 1 }}>
-                        {workspaces.map((ws) => (
-                            <Chip
-                                key={ws}
-                                label={ws}
-                                onDelete={() => handleRemoveWorkspace(ws)}
-                                data-testid={`chip-workspace-${ws}`}
-                                color="primary"
-                                variant="outlined"
+                    <Tooltip title="Refresh workspaces">
+                        <IconButton
+                            data-testid="button-refresh-workspaces"
+                            onClick={() => workspacesQuery.refetch()}
+                            size="small"
+                            disabled={workspacesQuery.isFetching}
+                        >
+                            <RefreshIcon fontSize="small" />
+                        </IconButton>
+                    </Tooltip>
+
+                    <Box sx={{ flex: 1 }} />
+
+                    <Typography
+                        variant="caption"
+                        color="primary"
+                        sx={{ cursor: "pointer", "&:hover": { textDecoration: "underline" } }}
+                        onClick={handleSelectAll}
+                        data-testid="link-select-all"
+                    >
+                        Select all
+                    </Typography>
+                    <Typography
+                        variant="caption"
+                        color="primary"
+                        sx={{ cursor: "pointer", "&:hover": { textDecoration: "underline" } }}
+                        onClick={handleDeselectAll}
+                        data-testid="link-deselect-all"
+                    >
+                        Deselect all
+                    </Typography>
+                </Box>
+
+                {workspacesQuery.isLoading ? (
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, py: 1 }}>
+                        <CircularProgress size={16} />
+                        <Typography variant="body2" color="text.secondary">
+                            Loading workspaces...
+                        </Typography>
+                    </Box>
+                ) : allWorkspaces.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary" sx={{ py: 1 }}>
+                        No workspaces found for this account.
+                    </Typography>
+                ) : (
+                    <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+                        {allWorkspaces.map((ws) => (
+                            <FormControlLabel
+                                key={ws.name}
+                                data-testid={`checkbox-workspace-${ws.name}`}
+                                control={
+                                    <Checkbox
+                                        size="small"
+                                        checked={!deselectedWorkspaces.has(ws.name)}
+                                        onChange={() => handleToggleWorkspace(ws.name)}
+                                    />
+                                }
+                                label={
+                                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                                        <Typography variant="body2">{ws.name}</Typography>
+                                        {ws.group && (
+                                            <Chip label={ws.group} size="small" variant="outlined" sx={{ height: 20, fontSize: "0.7rem" }} />
+                                        )}
+                                    </Box>
+                                }
+                                sx={{ mr: 2 }}
                             />
                         ))}
                     </Box>
-                </Box>
+                )}
             </Paper>
 
-            {!hasWorkspaces && (
+            {visibleWorkspaces.length === 0 && !workspacesQuery.isLoading && allWorkspaces.length > 0 && (
                 <Paper
                     variant="outlined"
                     sx={{
@@ -217,18 +266,20 @@ const Dashboard = () => {
                 >
                     <DashboardIcon sx={{ fontSize: 64, color: "action.disabled" }} />
                     <Typography variant="h6" color="text.secondary" data-testid="text-empty-state">
-                        Add a workspace to get started
+                        No workspaces selected
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                        Enter a workspace name above and press Enter or click the add button.
+                        Select one or more workspaces above to view workflow execution statuses.
                     </Typography>
                 </Paper>
             )}
 
-            {workspaces.map((workspace) => (
+            {visibleWorkspaces.map((ws) => (
                 <WorkspaceSection
-                    key={workspace}
-                    workspace={workspace}
+                    key={ws.name}
+                    workspace={ws.name}
+                    workspaceGroup={ws.group}
+                    workspaceDescription={ws.description}
                     refetchInterval={refetchInterval}
                 />
             ))}
@@ -238,10 +289,12 @@ const Dashboard = () => {
 
 interface WorkspaceSectionProps {
     workspace: string;
+    workspaceGroup: string | null;
+    workspaceDescription: string;
     refetchInterval: number;
 }
 
-const WorkspaceSection = ({ workspace, refetchInterval }: WorkspaceSectionProps) => {
+const WorkspaceSection = ({ workspace, workspaceGroup, workspaceDescription, refetchInterval }: WorkspaceSectionProps) => {
     const workspaceFilter: FilterClause[] = useMemo(
         () => [{ field: "workspace", value: workspace }],
         [workspace]
@@ -307,9 +360,19 @@ const WorkspaceSection = ({ workspace, refetchInterval }: WorkspaceSectionProps)
             {isFetching && <LinearProgress sx={{ height: 2 }} />}
 
             <Box sx={{ p: 2, display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid", borderColor: "divider" }}>
-                <Typography variant="h6" fontWeight={600} data-testid={`text-workspace-name-${workspace}`}>
-                    {workspace}
-                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Typography variant="h6" fontWeight={600} data-testid={`text-workspace-name-${workspace}`}>
+                        {workspace}
+                    </Typography>
+                    {workspaceGroup && (
+                        <Chip label={workspaceGroup} size="small" variant="outlined" />
+                    )}
+                    {workspaceDescription && (
+                        <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                            {workspaceDescription}
+                        </Typography>
+                    )}
+                </Box>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <Typography variant="caption" color="text.secondary">
                         {workflows.length} workflow{workflows.length !== 1 ? "s" : ""} · {executions.length} execution{executions.length !== 1 ? "s" : ""}

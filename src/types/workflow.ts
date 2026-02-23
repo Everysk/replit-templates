@@ -1,3 +1,13 @@
+export interface Workspace {
+    name: string;
+    group: string | null;
+    description: string;
+    version: string;
+    created: number;
+    updated: number;
+    [key: string]: unknown;
+}
+
 export interface Workflow {
     id: string;
     name: string;

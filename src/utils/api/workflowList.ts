@@ -1,10 +1,28 @@
 import { isAxiosError, type AxiosInstance, type AxiosResponse } from "axios";
 
-import type { Workflow, WorkflowExecution } from "../../types/workflow";
+import type { Workspace, Workflow, WorkflowExecution } from "../../types/workflow";
 import type { DefaultObject } from "../../types/defaultObject";
 
+const workspacesBaseUrl = "workspaces";
 const workflowsBaseUrl = "workflows";
 const executionsBaseUrl = "workflow_executions";
+
+export const getWorkspaces = async (api: AxiosInstance): Promise<Workspace[]> => {
+    try {
+        const response: AxiosResponse<DefaultObject> = await api.get(workspacesBaseUrl);
+        return response.data?.workspaces ?? [];
+    } catch (error: unknown) {
+        if (isAxiosError<DefaultObject>(error)) {
+            throw new Error(error.message || "Error listing workspaces");
+        }
+
+        if (error instanceof Error) {
+            throw error;
+        }
+
+        throw new Error("Error listing workspaces");
+    }
+};
 
 export const getWorkflows = async (api: AxiosInstance, query: DefaultObject): Promise<Workflow[]> => {
     const params: DefaultObject = {
