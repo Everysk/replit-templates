@@ -21,6 +21,10 @@ if [ -z "$EVERYSK_API_TOKEN" ]; then
     MISSING_VARS+=("EVERYSK_API_TOKEN")
 fi
 
+if [ -z "$EVERYSK_APP_NAME" ]; then
+    MISSING_VARS+=("EVERYSK_APP_NAME")
+fi
+
 # If any variables are missing, show instructions
 if [ ${#MISSING_VARS[@]} -gt 0 ]; then
     echo ""
@@ -34,6 +38,7 @@ if [ ${#MISSING_VARS[@]} -gt 0 ]; then
     echo -e "   2. Add these secrets:"
     echo -e "      ${YELLOW}EVERYSK_API_SID${NC}   → Your Everysk API account SID"
     echo -e "      ${YELLOW}EVERYSK_API_TOKEN${NC} → Your Everysk API authentication token"
+    echo -e "      ${YELLOW}EVERYSK_APP_NAME${NC}  → Your Everysk application name"
     echo -e ""
     echo -e "   ${BLUE}Get credentials at: ${BOLD}https://everysk.com/account${NC}"
     echo -e ""

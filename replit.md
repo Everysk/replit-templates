@@ -25,12 +25,13 @@ A React + TypeScript + Vite frontend application template. Uses MUI, Tailwind CS
 
 ## Environment Variables (Replit Secrets)
 
-This app requires two secrets to connect to the Everysk API. Add them in the **Secrets** tab (lock icon in the left sidebar):
+This app requires three secrets to connect to the Everysk API. Add them in the **Secrets** tab (lock icon in the left sidebar):
 
 | Secret | Required | Description |
 |--------|----------|-------------|
 | `EVERYSK_API_SID` | **Yes** | Your Everysk API account SID |
 | `EVERYSK_API_TOKEN` | **Yes** | Your Everysk API authentication token |
+| `EVERYSK_APP_NAME` | **Yes** | Your Everysk application name (used during deploy) |
 
 Get your credentials from: https://everysk.com/account
 
@@ -39,7 +40,8 @@ Get your credentials from: https://everysk.com/account
 1. Click the **Secrets** tab (lock icon) in the left sidebar
 2. Add `EVERYSK_API_SID` with your API SID value
 3. Add `EVERYSK_API_TOKEN` with your API token value
-4. Click **Run** — the app validates secrets on startup and will tell you if anything is missing
+4. Add `EVERYSK_APP_NAME` with your Everysk application name
+5. Click **Run** — the app validates secrets on startup and will tell you if anything is missing
 
 ## AI Integration (Anthropic Claude)
 - **Provider**: Anthropic via Replit AI Integrations (no personal API key needed, billed to Replit credits)
@@ -69,7 +71,7 @@ const message = await anthropic.messages.create({
 ## Agent Preferences
 
 - **Always read `replit.md` before starting or restarting any workflow.** This file contains required secrets, setup steps, and project context that must be reviewed before running the app. Do not start workflows blindly.
-- **On first run / initial setup:** Before starting any workflow, verify that the required secrets (`EVERYSK_API_SID` and `EVERYSK_API_TOKEN`) are configured. If they are not set, prompt the user to add them in the Secrets tab before attempting to start the app. Do not start workflows without these secrets — the app will fail with a clear error from `scripts/check-env.sh`.
+- **On first run / initial setup:** Before starting any workflow, verify that the required secrets (`EVERYSK_API_SID`, `EVERYSK_API_TOKEN`, and `EVERYSK_APP_NAME`) are configured. If they are not set, prompt the user to add them in the Secrets tab before attempting to start the app. Do not start workflows without these secrets — the app will fail with a clear error from `scripts/check-env.sh`.
 - **Always use the brainstorming skill** before any creative work — creating features, building components, adding functionality, or modifying behavior. Explore user intent, requirements, and design before implementation.
 - **Always use Everysk skills** (`everysk-lib-sdk`, `everysk-worker-builder`, `everysk-mcp`) when working with Everysk platform entities, APIs, workers, or workflows.
 - **Always use Anthropic (Claude) via Replit AI Integrations** for any AI/chat features in the app. Use the SDK and environment variables documented above — no personal API key needed.

@@ -21,6 +21,10 @@ if [ -z "${EVERYSK_API_TOKEN:-}" ]; then
     MISSING_VARS+=("EVERYSK_API_TOKEN")
 fi
 
+if [ -z "${EVERYSK_APP_NAME:-}" ]; then
+    MISSING_VARS+=("EVERYSK_APP_NAME")
+fi
+
 if [ ${#MISSING_VARS[@]} -gt 0 ]; then
     echo -e "${RED}${BOLD}❌ Missing required secrets:${NC}"
     for var in "${MISSING_VARS[@]}"; do
@@ -43,13 +47,8 @@ CURRENT_NAME=$(python3 -c "import json; print(json.load(open('${CONFIG_FILE}')).
 
 if [ -z "$CURRENT_NAME" ]; then
     echo ""
-    echo -e "${BLUE}${BOLD}📝 First-time setup${NC}"
-    echo -ne "${BOLD}Enter app name: ${NC}"
-    read -r APP_NAME
-    if [ -z "$APP_NAME" ]; then
-        echo -e "${RED}❌ App name cannot be empty. Aborting.${NC}"
-        exit 1
-    fi
+    echo -e "${BLUE}${BOLD}📝 First-time setup — using EVERYSK_APP_NAME from secrets${NC}"
+    APP_NAME="$EVERYSK_APP_NAME"
     python3 -c "
 import json, sys
 name = sys.argv[1]
