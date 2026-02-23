@@ -56,6 +56,42 @@ This README summarizes the project layout and how to use the React hooks, contex
     - `serveDevAppConfig.ts` — serves `dev/app-config.dev.json` during development.
 - `vite.config.ts` — registers plugins and the dev server proxy.
 
+## Environment Variables
+
+This app requires two credentials to authenticate with the Everysk API. These are **never** committed to the repository — they must be configured as secrets in your platform.
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `EVERYSK_API_SID` | **Yes** | Your Everysk API account SID |
+| `EVERYSK_API_TOKEN` | **Yes** | Your Everysk API authentication token |
+| `EVERYSK_API_URL` | No | API endpoint (defaults to `https://api.everysk.com/v2`) |
+
+Get your credentials from your [Everysk account dashboard](https://everysk.com/account).
+
+### Replit Setup
+
+When you import this template into Replit:
+
+1. Click the **Secrets** tab (lock icon) in the left sidebar
+2. Add secret: `EVERYSK_API_SID` → paste your API SID
+3. Add secret: `EVERYSK_API_TOKEN` → paste your API token
+4. Click **Run** — the app will start on port 5000
+
+The app validates these secrets on startup. If they are missing, you will see instructions in the console.
+
+### GitHub Actions Setup (Deployment)
+
+To enable automated deployment via `.github/workflows/deploy.yaml`:
+
+1. Go to your repository **Settings** → **Secrets and variables** → **Actions**
+2. Add repository secrets:
+   - `EVERYSK_API_SID` → your API SID
+   - `EVERYSK_API_TOKEN` → your API token
+3. (Optional) Add repository variable:
+   - `EVERYSK_API_URL` → custom API endpoint (defaults to `https://api.everysk.com/v2`)
+
+The workflow triggers on push to `dev` or via manual dispatch.
+
 ## Getting started (development)
 1. Install dependencies
    ```bash
@@ -97,11 +133,6 @@ The frontend uses `/api` as the base path for API calls.
 - In **production**, `/api` is resolved by the hosting environment (server/gateway) to the Everysk API.
 
 This keeps client code identical across environments—no manual base URL configuration is required.
-
-**Required environment variables (dev)**
-- `PROXY_SERVER_TARGET_URL`
-- `AUTH_TOKEN`
-- `ACCOUNT_SID`
 
 ---
 
