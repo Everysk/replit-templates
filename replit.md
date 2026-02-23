@@ -9,14 +9,16 @@ A React + TypeScript + Vite frontend application template. Uses MUI, Tailwind CS
 - **Styling**: Tailwind CSS 4 + MUI (Material UI) 7
 - **State/Data**: TanStack React Query, Axios
 - **Routing**: wouter
+- **Dev Proxy**: Vite dev server proxies `/api` requests to the Everysk API
 
 ## Project Structure
 - `src/` - Application source code
   - `components/` - Reusable UI components
-  - `contexts/` - React context providers (alerts, config, broadcast channel)
-  - `hooks/` - Custom React hooks (useAxios, useAppAlert, useAppConfig, useBroadcastChannel)
-  - `pages/` - Page components (home)
-  - `utils/` - Utility functions (queryClient)
+  - `contexts/` - React context providers
+  - `hooks/` - Custom React hooks
+  - `pages/` - Page components
+  - `types/` - TypeScript type definitions
+  - `utils/` - Utility functions and API helpers
 - `vite/` - Custom Vite plugins (env vars, dev app config, server proxy)
 - `dev/` - Development configuration files
 - `public/` - Static assets
@@ -92,6 +94,29 @@ The following agent skills **must** be loaded and used in the situations describ
 - Always load the **agent-tools** skill when running AI model inference, image/video generation, or web search via CLI.
 - Always load the **pdf** skill when the user mentions `.pdf` files or asks to produce/manipulate PDFs.
 - Always load the **find-skills** skill when the user asks about discovering new capabilities or extending functionality.
+
+## Dashboard Feature
+The app includes an operational dashboard (`src/pages/dashboard/`) that shows Everysk workflow execution statuses per workspace.
+
+### Key files:
+- `src/pages/dashboard/index.tsx` — Main dashboard page with workspace sections, summary cards, and execution tables
+- `src/hooks/useFetchWorkflows.tsx` — TanStack Query hook for fetching workflows by workspace (passes `workspace` as direct query param)
+- `src/hooks/useFetchWorkflowExecutions.tsx` — TanStack Query hook using `useQueries` to fetch executions per-workflow via `GET /workflows/{id}/workflow_executions`
+- `src/utils/api/workflowList.ts` — API utility functions for listing workspaces, workflows, and workflow executions
+- `src/types/workflow.ts` — TypeScript types for Workspace, Workflow, and WorkflowExecution entities
+
+### API Endpoints Used:
+- `GET /workspaces` — List all workspaces
+- `GET /workflows?workspace={name}` — List workflows in a workspace (workspace must be a direct query param, NOT inside a JSON `query` string)
+- `GET /workflows/{workflow_id}/workflow_executions` — List executions for a specific workflow (the standalone `/workflow_executions` endpoint does NOT exist)
+
+### Features:
+- Auto-loads all workspaces from the user's API credentials
+- Checkbox-based workspace selection to filter visible sections
+- Summary cards showing execution counts (total, succeeded, failed, running, pending)
+- Workflow table with latest execution run_status per workflow
+- Recent executions table with timestamps, duration, trigger, status/run_status chips
+- Configurable auto-refresh (10s, 30s, 1m, 5m, or off)
 
 ## Running
 - Dev server: `bash scripts/check-env.sh && npm run dev` (port 5000) — validates secrets before starting Vite
