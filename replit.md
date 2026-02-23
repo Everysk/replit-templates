@@ -75,4 +75,7 @@ const message = await anthropic.messages.create({
 ## Running
 - Dev server: `npm run dev` (port 5000)
 - Build: `npm run build` (outputs to `dist/`)
-- Deployment: Static site from `dist/` directory
+- Deploy: Use the "Deploy App" workflow in Replit (runs `scripts/replit-deploy.sh`)
+  - Builds the frontend, packages the `dist/` directory, and deploys to the Everysk API
+  - Equivalent to the GitHub Actions workflow in `.github/workflows/deploy.yaml`
+  - Requires `EVERYSK_API_SID` and `EVERYSK_API_TOKEN` secrets
