@@ -25,12 +25,13 @@ A React + TypeScript + Vite frontend application template. Uses MUI, Tailwind CS
 
 ## Environment Variables (Replit Secrets)
 
-This app requires two secrets to connect to the Everysk API. Add them in the **Secrets** tab (lock icon in the left sidebar):
+This app requires three secrets to connect to the Everysk API. Add them in the **Secrets** tab (lock icon in the left sidebar):
 
 | Secret | Required | Description |
 |--------|----------|-------------|
 | `EVERYSK_API_SID` | **Yes** | Your Everysk API account SID |
 | `EVERYSK_API_TOKEN` | **Yes** | Your Everysk API authentication token |
+| `EVERYSK_APP_NAME` | **Yes** | Your Everysk application name (used during deploy) |
 
 Get your credentials from: https://everysk.com/account
 
@@ -39,14 +40,14 @@ Get your credentials from: https://everysk.com/account
 1. Click the **Secrets** tab (lock icon) in the left sidebar
 2. Add `EVERYSK_API_SID` with your API SID value
 3. Add `EVERYSK_API_TOKEN` with your API token value
-4. Click **Run** — the app validates secrets on startup and will tell you if anything is missing
+4. Add `EVERYSK_APP_NAME` with your Everysk application name
+5. Click **Run** — the app validates secrets on startup and will tell you if anything is missing
 
 ## AI Integration (Anthropic Claude)
-- **Provider**: Anthropic via Replit AI Integrations (no personal API key needed, billed to Replit credits)
+- **Provider**: Anthropic directly (user's own API key)
 - **SDK**: `@anthropic-ai/sdk`
-- **Environment Variables** (auto-configured):
-  - `AI_INTEGRATIONS_ANTHROPIC_BASE_URL`
-  - `AI_INTEGRATIONS_ANTHROPIC_API_KEY`
+- **Environment Variables**:
+  - `ANTHROPIC_API_KEY` (user-provided, stored in Replit Secrets)
 - **Available Models**: claude-opus-4-6, claude-sonnet-4-6, claude-haiku-4-5
 - **Reference Files**: `.replit_integration_files/` contains template code for chat routes, batch processing, and storage patterns
 
@@ -55,8 +56,7 @@ Get your credentials from: https://everysk.com/account
 import Anthropic from "@anthropic-ai/sdk";
 
 const anthropic = new Anthropic({
-  apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL,
+  apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
 const message = await anthropic.messages.create({
@@ -69,15 +69,65 @@ const message = await anthropic.messages.create({
 ## Agent Preferences
 
 - **Always read `replit.md` before starting or restarting any workflow.** This file contains required secrets, setup steps, and project context that must be reviewed before running the app. Do not start workflows blindly.
-- **On first run / initial setup:** Before starting any workflow, verify that the required secrets (`EVERYSK_API_SID` and `EVERYSK_API_TOKEN`) are configured. If they are not set, prompt the user to add them in the Secrets tab before attempting to start the app. Do not start workflows without these secrets — the app will fail with a clear error from `scripts/check-env.sh`.
-- **Always use the brainstorming skill** before any creative work — creating features, building components, adding functionality, or modifying behavior. Explore user intent, requirements, and design before implementation.
-- **Always use Everysk skills** (`everysk-lib-sdk`, `everysk-worker-builder`, `everysk-mcp`) when working with Everysk platform entities, APIs, workers, or workflows.
-- **Always use Anthropic (Claude) via Replit AI Integrations** for any AI/chat features in the app. Use the SDK and environment variables documented above — no personal API key needed.
+- **On first run / initial setup:** Before starting any workflow, verify that the required secrets (`EVERYSK_API_SID`, `EVERYSK_API_TOKEN`, and `EVERYSK_APP_NAME`) are configured. If they are not set, prompt the user to add them in the Secrets tab before attempting to start the app. Do not start workflows without these secrets — the app will fail with a clear error from `scripts/check-env.sh`.
+- **Always use Anthropic (Claude) via the user's own API key** for any AI/chat features in the app. Use the SDK and `ANTHROPIC_API_KEY` environment variable documented above.
+
+### Required Agent Skills
+
+The following agent skills **must** be loaded and used in the situations described. These skills are installed in `.agents/skills/` and persist across all copies of this template.
+
+| Skill | Path | When to Use |
+|-------|------|-------------|
+| **brainstorming** | `.agents/skills/brainstorming` | **Before any creative work** — creating features, building components, adding functionality, or modifying behavior. Always explore user intent, requirements, and design before implementation. |
+| **everysk-lib-sdk** | `.agents/skills/everysk/everysk-lib-sdk` | When working with the Everysk Python SDK/API — portfolios, datastores, workflows, and automation. |
+| **everysk-mcp** | `.agents/skills/everysk/everysk-mcp` | When working with Everysk MCP server implementations and integration patterns. |
+| **everysk-worker-builder** | `.agents/skills/everysk/workers-everysk-skill` | When building new workers in the Everysk workers-everysk platform. |
+| **frontend-design** | `.agents/skills/frontend-design` | When building or styling any UI — web components, pages, dashboards, layouts. Produces polished, production-grade interfaces. |
+| **agent-tools** | `.agents/skills/agent-tools` | When running AI apps via inference.sh CLI — image generation, video creation, LLMs, search, 3D, Twitter automation (FLUX, Veo, Gemini, Grok, Claude, etc.). |
+| **pdf** | `.agents/skills/pdf` | When doing anything with PDF files — reading, merging, splitting, creating, filling forms, OCR, watermarks, encryption. |
+| **find-skills** | `.agents/skills/find-skills` | When the user asks "how do I do X" or looks for functionality that might exist as an installable skill. |
+
+**Rules:**
+- Always load the **brainstorming** skill before starting any creative or feature-building work.
+- Always load the relevant **Everysk** skill(s) when the task involves Everysk platform entities, APIs, workers, or workflows.
+- Always load the **frontend-design** skill when building or modifying any UI component or page.
+- Always load the **agent-tools** skill when running AI model inference, image/video generation, or web search via CLI.
+- Always load the **pdf** skill when the user mentions `.pdf` files or asks to produce/manipulate PDFs.
+- Always load the **find-skills** skill when the user asks about discovering new capabilities or extending functionality.
+
+## Dashboard Feature
+The app includes an operational dashboard (`src/pages/dashboard/`) that shows Everysk workflow execution statuses per workspace.
+
+### Key files:
+- `src/pages/dashboard/index.tsx` — Main dashboard page with workspace sections, summary cards, and execution tables
+- `src/hooks/useFetchWorkflows.tsx` — TanStack Query hook for fetching workflows by workspace (passes `workspace` as direct query param)
+- `src/hooks/useFetchWorkflowExecutions.tsx` — TanStack Query hook using `useQueries` to fetch executions per-workflow via `GET /workflows/{id}/workflow_executions`
+- `src/utils/api/workflowList.ts` — API utility functions for listing workspaces, workflows, and workflow executions
+- `src/types/workflow.ts` — TypeScript types for Workspace, Workflow, and WorkflowExecution entities
+
+### API Endpoints Used:
+- `GET /workspaces` — List all workspaces
+- `GET /workflows?workspace={name}` — List workflows in a workspace (workspace must be a direct query param, NOT inside a JSON `query` string)
+- `GET /workflows/{workflow_id}/workflow_executions` — List executions for a specific workflow (the standalone `/workflow_executions` endpoint does NOT exist)
+
+### Features:
+- Auto-loads all workspaces from the user's API credentials
+- Checkbox-based workspace selection to filter visible sections
+- Summary cards showing execution counts (total, succeeded, failed, running, pending)
+- Workflow table with latest execution run_status per workflow
+- Recent executions table with timestamps, duration, trigger, status/run_status chips
+- Configurable auto-refresh (10s, 30s, 1m, 5m, or off)
 
 ## Running
 - Dev server: `bash scripts/check-env.sh && npm run dev` (port 5000) — validates secrets before starting Vite
 - Build: `npm run build` (outputs to `dist/`)
 - Deploy: Use the "Deploy App" workflow in Replit (runs `scripts/replit-deploy.sh`)
+  - Automatically installs Python dependencies from `requirements.txt` before building
   - Builds the frontend, packages the `dist/` directory, and deploys to the Everysk API
   - Equivalent to the GitHub Actions workflow in `.github/workflows/deploy.yaml`
-  - Requires `EVERYSK_API_SID` and `EVERYSK_API_TOKEN` secrets
+  - Requires `EVERYSK_API_SID`, `EVERYSK_API_TOKEN`, and `EVERYSK_APP_NAME` secrets
+
+## Deploy Prerequisites
+- **Python dependencies** (`requirements.txt`): `requests`, `python-dotenv`, `everysk-lib`, `httpx` — installed automatically by `scripts/replit-deploy.sh` before each deploy
+- **Node build**: `npm run build` must complete without errors. Use `ReactElement` (not `ReactNode`) for MUI `Chip` `icon` props and similar typed element props
+- If adding new Python dependencies needed by deploy scripts, add them to `requirements.txt` — the deploy script runs `pip install -q -r requirements.txt` automatically

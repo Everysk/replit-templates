@@ -1,8 +1,4 @@
-requests==*
-python-dotenv==*
-everysk-lib>=1.11.5
-httpx==*
-everysk-lib
-httpx
-python-dotenv
 requests
+python-dotenv
+everysk-lib>=1.11.5
+httpx
