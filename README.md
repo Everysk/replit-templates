@@ -138,6 +138,25 @@ The workflow triggers via manual dispatch (**Actions** tab → **Deploy App** �
   ```
 
 
+## Dev Configuration
+
+The file `dev/app-config.dev.json` configures the frontend for local development and is also included in production deploys.
+
+```json
+{
+  "app": "your-everysk-app-name"
+}
+```
+
+**How it works:**
+- In **development** (`npm run dev`): Vite serves this file at `/app-config.dev.json`; `src/main.tsx` fetches it on startup and merges it into `window.APP_CONFIG`.
+- In **production** (deploy): `scripts/deploy.py` reads this file and sends it as `env=` in the deploy POST to the Everysk API, which stores and injects it at runtime.
+
+**What to set:**
+- `"app"` — set to the same value as your `EVERYSK_APP_NAME` secret. This populates `window.APP_CONFIG.app` in the running app.
+
+**Title injection:** The browser `<title>` is set from `EVERYSK_APP_NAME` automatically by the Vite plugin at both dev and build time — you do not need to update `index.html` manually.
+
 ## Running workflows (Replit)
 
 | Workflow | Trigger | Command | Description |
