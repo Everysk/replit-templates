@@ -85,6 +85,10 @@ const message = await anthropic.messages.create({
 | **agent-tools** | `.agents/skills/agent-tools` | When running AI apps via inference.sh CLI — image generation, video creation, LLMs, search, 3D, Twitter automation (FLUX, Veo, Gemini, Grok, Claude, etc.). |
 | **pdf** | `.agents/skills/pdf` | When doing anything with PDF files — reading, merging, splitting, creating, filling forms, OCR, watermarks, encryption. |
 | **find-skills** | `.agents/skills/find-skills` | When the user asks "how do I do X" or looks for functionality that might exist as an installable skill. |
+| **ui-ux-pro-max** | `.agents/skills/ui-ux-pro-max` | When building or styling any React UI — comprehensive design system data (colors, typography, icons, charts, component patterns). Use alongside `frontend-design` and the Everysk branding reference. |
+| **systematic-debugging** | `.agents/skills/systematic-debugging` | When debugging any error, test failure, or unexpected behavior. Root-cause tracing, test pressure analysis, condition-based waiting patterns, and defense-in-depth. |
+| **vercel-react-best-practices** | `.agents/skills/vercel-react-best-practices` | When reviewing or optimizing React component performance. 50+ rules covering rendering, re-renders, async boundaries, bundle optimization, and JS patterns. |
+| **browser-use** | `.agents/skills/browser-use` | When automating browser interactions — screenshots, form fills, navigation, UI testing within the agent. |
 
 **Mandatory Rules (apply to every conversation, including new sessions and fresh imports):**
 - Always load the **everysk-api** skill at the start of **every conversation without exception** — this template is an Everysk platform app and all work requires platform knowledge. Do NOT skip this step, even for simple questions. **You MUST also read ALL 7 reference files** in `.agents/skills/everysk-api/references/` (sdk-entities, sdk-engines, core, api-reference, server, worker-patterns, branding) — these are not optional progressive-disclosure files, they are mandatory context for every session.
@@ -94,6 +98,10 @@ const message = await anthropic.messages.create({
 - Always load the **pdf** skill when the user mentions `.pdf` files or asks to produce/manipulate PDFs.
 - Always load the **find-skills** skill when the user asks about discovering new capabilities or extending functionality.
 - These rules apply to **every conversation** — not just the first one. On every new conversation or fresh import, re-read this section and follow the skill requirements.
+- Always load the **ui-ux-pro-max** skill when building or modifying React UI components, alongside **frontend-design** and the Everysk branding reference from `everysk-api`.
+- Always load the **systematic-debugging** skill when encountering any error, bug, or unexpected behavior — before attempting a fix.
+- Always load the **vercel-react-best-practices** skill before writing or reviewing React components to apply performance best practices.
+- Always load the **browser-use** skill when performing any browser automation or UI interaction tasks.
 
 ### Key files:
 - `src/components/WorkspaceSelector.tsx` — Reusable workspace dropdown selector
