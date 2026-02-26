@@ -105,7 +105,6 @@ const message = await anthropic.messages.create({
 - Always load the **browser-use** skill when performing any browser automation or UI interaction tasks.
 
 ### Key files:
-- `src/components/WorkspaceSelector.tsx` — Reusable workspace dropdown selector
 - `src/hooks/useFetchPortfolio.tsx` — TanStack Query hook for fetching portfolios
 - `src/hooks/usePortfolioMutations.tsx` — Mutation hook for portfolio CRUD
 - `src/hooks/useFetchDatastore.tsx` — TanStack Query hook for fetching datastores
