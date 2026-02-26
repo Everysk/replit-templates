@@ -32,10 +32,11 @@
 This README summarizes the project layout and how to use the React hooks, contexts and the Vite setup included in this repository.
 
 ## Quick highlights
-- React + TypeScript app scaffold with MUI and Tailwind.
-- TanStack Query (React Query) used across hooks.
-- Context providers for app config and alerts.
-- Built-in Vite plugins and a dev server proxy.
+- React 19 + TypeScript app scaffold with MUI 7 and Tailwind CSS 4.
+- TanStack Query v5 used across all data-fetching and mutation hooks.
+- Context providers for app config, global alerts, and cross-tab messaging.
+- `EVERYSK_APP_NAME` auto-injected into `<title>` at dev and build time via Vite plugin.
+- Dev proxy (`/api`) forwards to the Everysk API in development; same path works in production.
 
 ## Repository layout (important files/folders)
 - `src/`
