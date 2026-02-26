@@ -101,6 +101,10 @@ const message = await anthropic.messages.create({
 - `src/hooks/useFetchDatastore.tsx` — TanStack Query hook for fetching datastores
 - `src/hooks/useDatastoreMutations.tsx` — Mutation hook for datastore CRUD
 - `src/hooks/useFetchWorkspaces.tsx` — TanStack Query hook for fetching workspaces
+- `src/hooks/useFetchWorkflows.tsx` — TanStack Query hook for fetching workflows by workspace
+- `src/hooks/useFetchWorkflowExecutions.tsx` — TanStack Query hook using `useQueries` to fetch executions per-workflow
+- `src/utils/api/workflowList.ts` — API utility functions for listing workflows and workflow executions
+- `src/types/workflow.ts` — TypeScript types for Workflow and WorkflowExecution entities
 
 ### API Endpoints Used:
 - `GET /workspaces` — List all workspaces
@@ -110,6 +114,8 @@ const message = await anthropic.messages.create({
 - `GET /datastores` — List datastores (with workspace filter)
 - `POST /datastores` — Create a datastore
 - `DELETE /datastores/{id}` — Delete a datastore
+- `GET /workflows?workspace={name}` — List workflows in a workspace (workspace must be a direct query param, NOT inside a JSON `query` string)
+- `GET /workflows/{workflow_id}/workflow_executions` — List executions for a specific workflow (the standalone `/workflow_executions` endpoint does NOT exist)
 
 ## Running
 - Dev server: `bash scripts/check-env.sh && npm run dev` (port 5000) — validates secrets before starting Vite
