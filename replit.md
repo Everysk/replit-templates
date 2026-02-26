@@ -126,6 +126,22 @@ const message = await anthropic.messages.create({
   - Equivalent to the GitHub Actions workflow in `.github/workflows/deploy.yaml`
   - Requires `EVERYSK_API_SID`, `EVERYSK_API_TOKEN`, and `EVERYSK_APP_NAME` secrets
 
+## Dev Configuration
+
+The file `dev/app-config.dev.json` configures the frontend for local development. It is served by the Vite dev server at `/app-config.dev.json` and merged into `window.APP_CONFIG` on startup.
+
+**Sync this file whenever `EVERYSK_APP_NAME` is set or changed:**
+
+```json
+{
+  "app": "your-everysk-app-name"
+}
+```
+
+- Set `"app"` to the same value as your `EVERYSK_APP_NAME` secret
+- This controls `window.APP_CONFIG.app` in development (production reads config from build metadata)
+- The browser tab title is set from `EVERYSK_APP_NAME` automatically at both dev and build time — no manual title update needed
+
 ## Deploy Prerequisites
 - **Python dependencies** (`requirements.txt`): `requests`, `python-dotenv`, `everysk-lib`, `httpx` — installed automatically by `scripts/replit-deploy.sh` before each deploy
 - **Node build**: `npm run build` must complete without errors. Use `ReactElement` (not `ReactNode`) for MUI `Chip` `icon` props and similar typed element props
