@@ -78,6 +78,7 @@ cypress/screenshots/
 # =========================
 # Misc
 # =========================
+config.json
 *.local
 *.tmp
 *.swp
@@ -86,3 +87,4 @@ cypress/screenshots/
 .playwright-mcp
 docs/
 
+.serena/project.yml

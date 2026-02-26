@@ -124,6 +124,15 @@ def main():
     # Package
     print('Packaging dist directory...')
     template = build_template(config_path, dist_path)
+
+    # Include app env settings
+    app_config_path = os.path.join(PROJECT_ROOT, 'dev', 'app-config.dev.json')
+    if os.path.isfile(app_config_path):
+        template['env'] = read_file(app_config_path)
+        print(f'App env: {json.dumps(template["env"])}')
+    else:
+        print(f'WARNING: app-config.dev.json not found at {app_config_path} — env not set')
+
     print(f'Config: {json.dumps({k: v for k, v in template.items() if k != "data"}, indent=2)}')
 
     # Deploy

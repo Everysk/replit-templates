@@ -32,10 +32,11 @@
 This README summarizes the project layout and how to use the React hooks, contexts and the Vite setup included in this repository.
 
 ## Quick highlights
-- React + TypeScript app scaffold with MUI and Tailwind.
-- TanStack Query (React Query) used across hooks.
-- Context providers for app config and alerts.
-- Built-in Vite plugins and a dev server proxy.
+- React 19 + TypeScript app scaffold with MUI 7 and Tailwind CSS 4.
+- TanStack Query v5 used across all data-fetching and mutation hooks.
+- Context providers for app config, global alerts, and cross-tab messaging.
+- `EVERYSK_APP_NAME` auto-injected into `<title>` at dev and build time via Vite plugin.
+- Dev proxy (`/api`) forwards to the Everysk API in development; same path works in production.
 
 ## Repository layout (important files/folders)
 - `src/`
@@ -93,7 +94,7 @@ When you import this template into Replit:
 3. Add secret: `EVERYSK_API_TOKEN` → paste your API token
 4. Add secret: `EVERYSK_APP_NAME` → paste your Everysk application name
 5. (Optional) Add secret: `ANTHROPIC_API_KEY` → paste your Anthropic API key (required only for Claude AI features)
-6. Click **Run** — the app will start on port 5000
+6. Click **Run** — the dev server starts on port 5000. This does **not** deploy — to deploy, click "Deploy App" in the Workflows tab after setup is complete.
 
 The app validates these secrets on startup. If they are missing, you will see instructions in the console.
 
@@ -137,14 +138,35 @@ The workflow triggers via manual dispatch (**Actions** tab → **Deploy App** �
   ```
 
 
+## Dev Configuration
+
+The file `dev/app-config.dev.json` configures the frontend for local development and is also included in production deploys.
+
+```json
+{
+  "app": "your-everysk-app-name"
+}
+```
+
+**How it works:**
+- In **development** (`npm run dev`): Vite serves this file at `/app-config.dev.json`; `src/main.tsx` fetches it on startup and merges it into `window.APP_CONFIG`.
+- In **production** (deploy): `scripts/deploy.py` reads this file and sends it as `env=` in the deploy POST to the Everysk API, which stores and injects it at runtime.
+
+**What to set:**
+- `"app"` — set to the same value as your `EVERYSK_APP_NAME` secret. This populates `window.APP_CONFIG.app` in the running app.
+
+**Title injection:** The browser `<title>` is set from `EVERYSK_APP_NAME` automatically by the Vite plugin at both dev and build time — you do not need to update `index.html` manually.
+
 ## Running workflows (Replit)
 
-| Workflow | Command | Description |
-|----------|---------|-------------|
-| **Project** (Run button) | `bash scripts/check-env.sh && npm run dev` | Validates secrets, then starts the dev server on port 5000 |
-| **Deploy App** | `bash scripts/replit-deploy.sh` | Builds the frontend, packages `dist/`, and deploys to the Everysk API |
+| Workflow | Trigger | Command | Description |
+|----------|---------|---------|-------------|
+| **Project** (Run button) | Auto on import + Run button | `bash scripts/check-env.sh && npm run dev` | Validates secrets, then starts the dev server on port 5000 |
+| **Deploy App** | **Manual only — never auto-run** | `bash scripts/replit-deploy.sh` | Builds the frontend, packages `dist/`, and deploys to the Everysk API |
 
-The "Deploy App" workflow requires `EVERYSK_API_SID`, `EVERYSK_API_TOKEN`, and `EVERYSK_APP_NAME` to be set in Secrets. On first deploy, `EVERYSK_APP_NAME` is written into `config.json` and subsequent deploys use the stored name.
+> ⚠️ **Deploy App is manual only.** Never run `scripts/replit-deploy.sh` automatically on import, first run, or initial setup. Click "Deploy App" in the Replit Workflows tab only when you intend to deploy to production.
+
+The "Deploy App" workflow requires `EVERYSK_API_SID`, `EVERYSK_API_TOKEN`, and `EVERYSK_APP_NAME` to be set in Secrets. On first deploy, `EVERYSK_APP_NAME` is written into `config.json` and subsequent deploys use the stored name. The app settings from `dev/app-config.dev.json` are automatically included as `env` in the deploy payload.
 
 ---
 
@@ -173,9 +195,11 @@ const message = await anthropic.messages.create({
 ---
 
 ## Vite notes (short)
-- The project root is used as `envDir`.
-- Dev-only config can be served from `/app-config.dev.json` via plugin.
-- A dev proxy is enabled only when running `vite` in serve mode (`npm run dev`).
+- The project root is used as `envDir` (reads `.env` from project root).
+- Dev-only config is served from `/app-config.dev.json` by `serveDevAppConfigPlugin` (serve mode only).
+- `EVERYSK_APP_NAME` is auto-injected into `<title>` by `envVarsLocationPlugin` in both dev and build.
+- In **build** mode, `envVarsLocationPlugin` also injects `<meta name="app-config">` into `index.html`.
+- The dev proxy (`/api` → Everysk API) is enabled only in serve mode (`npm run dev`).
 
 
 ## Dev proxy (`/api`) (Vite)
@@ -191,29 +215,39 @@ This keeps client code identical across environments—no manual base URL config
 
 # Providers (required wiring)
 
-Wrap the app with providers so hooks can access config, alerts, broadcast channel and query client:
+All providers are wired in `src/App.tsx`. The required nesting order (outermost first):
 
 ```tsx
-import React from "react";
-import { createRoot } from "react-dom/client";
-import App from "./App";
-import { AppConfigProvider } from "./contexts/appConfigContext";
-import { AppAlertProvider } from "./contexts/appAlertContext";
+import { queryClient } from "./utils/queryClient";
 import { BroadcastChannelProvider } from "./contexts/broadcastChannelContext";
-import { QueryClientProvider } from "./utils/queryClient";
+import { AppConfigProvider } from "./contexts/appConfigContext";
+import { ThemeProviderWrapper } from "./components/themeProviderWrapper";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { AppAlertProvider } from "./contexts/appAlertContext";
 
-createRoot(document.getElementById("root")!).render(
-  <QueryClientProvider>
-    <AppConfigProvider>
-      <AppAlertProvider>
-        <BroadcastChannelProvider>
-          <App />
-        </BroadcastChannelProvider>
-      </AppAlertProvider>
-    </AppConfigProvider>
-  </QueryClientProvider>
-);
+function App() {
+  return (
+    <BroadcastChannelProvider>
+      <AppConfigProvider>
+        <ThemeProviderWrapper>
+          <QueryClientProvider client={queryClient}>
+            <AppAlertProvider>
+              {/* your page content here */}
+            </AppAlertProvider>
+          </QueryClientProvider>
+        </ThemeProviderWrapper>
+      </AppConfigProvider>
+    </BroadcastChannelProvider>
+  );
+}
 ```
+
+**Why this order:**
+- `BroadcastChannelProvider` outermost — no dependencies, provides cross-tab messaging to everything
+- `AppConfigProvider` — reads `window.APP_CONFIG` (available immediately after bootstrap)
+- `ThemeProviderWrapper` — MUI theme must wrap Query and Alert (Alert uses MUI components)
+- `QueryClientProvider` — must wrap any component that calls `useQuery`/`useMutation`
+- `AppAlertProvider` — innermost; hooks that show alerts live inside Query context
 
 ---
 
