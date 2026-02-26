@@ -195,9 +195,11 @@ const message = await anthropic.messages.create({
 ---
 
 ## Vite notes (short)
-- The project root is used as `envDir`.
-- Dev-only config can be served from `/app-config.dev.json` via plugin.
-- A dev proxy is enabled only when running `vite` in serve mode (`npm run dev`).
+- The project root is used as `envDir` (reads `.env` from project root).
+- Dev-only config is served from `/app-config.dev.json` by `serveDevAppConfigPlugin` (serve mode only).
+- `EVERYSK_APP_NAME` is auto-injected into `<title>` by `envVarsLocationPlugin` in both dev and build.
+- In **build** mode, `envVarsLocationPlugin` also injects `<meta name="app-config">` into `index.html`.
+- The dev proxy (`/api` → Everysk API) is enabled only in serve mode (`npm run dev`).
 
 
 ## Dev proxy (`/api`) (Vite)
@@ -213,29 +215,39 @@ This keeps client code identical across environments—no manual base URL config
 
 # Providers (required wiring)
 
-Wrap the app with providers so hooks can access config, alerts, broadcast channel and query client:
+All providers are wired in `src/App.tsx`. The required nesting order (outermost first):
 
 ```tsx
-import React from "react";
-import { createRoot } from "react-dom/client";
-import App from "./App";
-import { AppConfigProvider } from "./contexts/appConfigContext";
-import { AppAlertProvider } from "./contexts/appAlertContext";
+import { queryClient } from "./utils/queryClient";
 import { BroadcastChannelProvider } from "./contexts/broadcastChannelContext";
-import { QueryClientProvider } from "./utils/queryClient";
+import { AppConfigProvider } from "./contexts/appConfigContext";
+import { ThemeProviderWrapper } from "./components/themeProviderWrapper";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { AppAlertProvider } from "./contexts/appAlertContext";
 
-createRoot(document.getElementById("root")!).render(
-  <QueryClientProvider>
-    <AppConfigProvider>
-      <AppAlertProvider>
-        <BroadcastChannelProvider>
-          <App />
-        </BroadcastChannelProvider>
-      </AppAlertProvider>
-    </AppConfigProvider>
-  </QueryClientProvider>
-);
+function App() {
+  return (
+    <BroadcastChannelProvider>
+      <AppConfigProvider>
+        <ThemeProviderWrapper>
+          <QueryClientProvider client={queryClient}>
+            <AppAlertProvider>
+              {/* your page content here */}
+            </AppAlertProvider>
+          </QueryClientProvider>
+        </ThemeProviderWrapper>
+      </AppConfigProvider>
+    </BroadcastChannelProvider>
+  );
+}
 ```
+
+**Why this order:**
+- `BroadcastChannelProvider` outermost — no dependencies, provides cross-tab messaging to everything
+- `AppConfigProvider` — reads `window.APP_CONFIG` (available immediately after bootstrap)
+- `ThemeProviderWrapper` — MUI theme must wrap Query and Alert (Alert uses MUI components)
+- `QueryClientProvider` — must wrap any component that calls `useQuery`/`useMutation`
+- `AppAlertProvider` — innermost; hooks that show alerts live inside Query context
 
 ---
 
