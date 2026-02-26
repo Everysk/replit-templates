@@ -45,12 +45,6 @@ outputType = "console"
 localPort = 5000
 externalPort = 80
 
-[deployment]
-deploymentTarget = "static"
-build = ["npm", "run", "build"]
-publicDir = "dist"
-run = ["node", "./dist/index.cjs"]
-
 [userenv]
 
 [userenv.shared]
