@@ -78,17 +78,17 @@ const message = await anthropic.messages.create({
 
 | Skill | Path | When to Use |
 |-------|------|-------------|
-| **everysk-api** | `.agents/skills/everysk-api` | **Every conversation, every prompt, every session.** This is the Everysk platform reference — REST API, Python SDK, WorkerBase patterns, entities (Portfolio, Datastore, Report, File), calculations, risk, and automation. Load this skill before any work. All apps built from this template run on Everysk. |
+| **everysk-api** | `.agents/skills/everysk-api` | **Every conversation, every prompt, every session.** Comprehensive Everysk platform reference — REST API v2, Python SDK entities (Portfolio, Datastore, Report, File, CustomIndex, PrivateSecurity), 6 engines (MarketData, UserCache, Compliance, ExpressionEngine, UserLock, Cryptography), 13 core modules, WorkerBase patterns, 7 calculation endpoints, server/deployment, and 2026 brand identity (colors, typography, voice). **MANDATORY: Load SKILL.md AND read ALL 7 reference files** (7,690 total lines) on every invocation. All apps built from this template run on Everysk. |
 | **brainstorming** | `.agents/skills/brainstorming` | **Before any creative work** — creating features, building components, adding functionality, or modifying behavior. Always explore user intent, requirements, and design before implementation. |
-| **frontend-design** | `.agents/skills/frontend-design` | When building or styling any UI — web components, pages, dashboards, layouts. Produces polished, production-grade interfaces. |
+| **frontend-design** | `.agents/skills/frontend-design` | When building or styling any UI — web components, pages, dashboards, layouts. Produces polished, production-grade interfaces. **Must follow Everysk brand guidelines** from everysk-api branding reference. |
 | **agent-tools** | `.agents/skills/agent-tools` | When running AI apps via inference.sh CLI — image generation, video creation, LLMs, search, 3D, Twitter automation (FLUX, Veo, Gemini, Grok, Claude, etc.). |
 | **pdf** | `.agents/skills/pdf` | When doing anything with PDF files — reading, merging, splitting, creating, filling forms, OCR, watermarks, encryption. |
 | **find-skills** | `.agents/skills/find-skills` | When the user asks "how do I do X" or looks for functionality that might exist as an installable skill. |
 
 **Mandatory Rules (apply to every conversation, including new sessions and fresh imports):**
-- Always load the **everysk-api** skill at the start of **every conversation without exception** — this template is an Everysk platform app and all work requires platform knowledge. Do NOT skip this step, even for simple questions.
+- Always load the **everysk-api** skill at the start of **every conversation without exception** — this template is an Everysk platform app and all work requires platform knowledge. Do NOT skip this step, even for simple questions. **You MUST also read ALL 7 reference files** in `.agents/skills/everysk-api/references/` (sdk-entities, sdk-engines, core, api-reference, server, worker-patterns, branding) — these are not optional progressive-disclosure files, they are mandatory context for every session.
 - Always load the **brainstorming** skill before starting any creative or feature-building work. Do NOT skip this step.
-- Always load the **frontend-design** skill when building or modifying any UI component or page.
+- Always load the **frontend-design** skill when building or modifying any UI component or page. **Follow the Everysk 2026 brand guidelines** from the everysk-api branding reference (colors: #F2703B orange, #C9DDE8 blue, #A49F8C gray; fonts: Playfair Display/Space Grotesk/DM Sans).
 - Always load the **agent-tools** skill when running AI model inference, image/video generation, or web search via CLI.
 - Always load the **pdf** skill when the user mentions `.pdf` files or asks to produce/manipulate PDFs.
 - Always load the **find-skills** skill when the user asks about discovering new capabilities or extending functionality.

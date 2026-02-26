@@ -273,7 +273,7 @@ Example:
 ### Website & UI Generation
 - Default to dark mode for hero sections
 - Light mode (Off White) for content sections
-- Use Season Mix for headlines
+- Use Playfair Display for headlines
 - Space Grotesk for UI elements
 - DM Sans for body text
 - Apply Everysk color palette strictly
@@ -313,7 +313,7 @@ Before finalizing output, confirm:
 - [ ] AI is framed as execution, not novelty
 - [ ] Tone is authoritative and precise
 - [ ] Colors align with 2026 palette (#F2703B orange, #C9DDE8 blue, #A49F8C gray)
-- [ ] Typography uses Season Mix / Space Grotesk / DM Sans system
+- [ ] Typography uses Playfair Display / Space Grotesk / DM Sans system
 - [ ] No generic SaaS or AI buzzwords
 - [ ] Domain-specific language used appropriately
 - [ ] Outcomes are quantifiable where possible
