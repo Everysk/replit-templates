@@ -94,7 +94,7 @@ When you import this template into Replit:
 3. Add secret: `EVERYSK_API_TOKEN` → paste your API token
 4. Add secret: `EVERYSK_APP_NAME` → paste your Everysk application name
 5. (Optional) Add secret: `ANTHROPIC_API_KEY` → paste your Anthropic API key (required only for Claude AI features)
-6. Click **Run** — the app will start on port 5000
+6. Click **Run** — the dev server starts on port 5000. This does **not** deploy — to deploy, click "Deploy App" in the Workflows tab after setup is complete.
 
 The app validates these secrets on startup. If they are missing, you will see instructions in the console.
 
@@ -140,12 +140,14 @@ The workflow triggers via manual dispatch (**Actions** tab → **Deploy App** �
 
 ## Running workflows (Replit)
 
-| Workflow | Command | Description |
-|----------|---------|-------------|
-| **Project** (Run button) | `bash scripts/check-env.sh && npm run dev` | Validates secrets, then starts the dev server on port 5000 |
-| **Deploy App** | `bash scripts/replit-deploy.sh` | Builds the frontend, packages `dist/`, and deploys to the Everysk API |
+| Workflow | Trigger | Command | Description |
+|----------|---------|---------|-------------|
+| **Project** (Run button) | Auto on import + Run button | `bash scripts/check-env.sh && npm run dev` | Validates secrets, then starts the dev server on port 5000 |
+| **Deploy App** | **Manual only — never auto-run** | `bash scripts/replit-deploy.sh` | Builds the frontend, packages `dist/`, and deploys to the Everysk API |
 
-The "Deploy App" workflow requires `EVERYSK_API_SID`, `EVERYSK_API_TOKEN`, and `EVERYSK_APP_NAME` to be set in Secrets. On first deploy, `EVERYSK_APP_NAME` is written into `config.json` and subsequent deploys use the stored name.
+> ⚠️ **Deploy App is manual only.** Never run `scripts/replit-deploy.sh` automatically on import, first run, or initial setup. Click "Deploy App" in the Replit Workflows tab only when you intend to deploy to production.
+
+The "Deploy App" workflow requires `EVERYSK_API_SID`, `EVERYSK_API_TOKEN`, and `EVERYSK_APP_NAME` to be set in Secrets. On first deploy, `EVERYSK_APP_NAME` is written into `config.json` and subsequent deploys use the stored name. The app settings from `dev/app-config.dev.json` are automatically included as `env` in the deploy payload.
 
 ---
 
