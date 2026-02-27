@@ -24,12 +24,9 @@ coverage/
 
 # =========================
 # Environment files
-# (mantenha .env.example versionado)
 # =========================
 .env
 .env.*
-!.env.example
-!.env.sample
 
 # =========================
 # Logs
@@ -81,7 +78,13 @@ cypress/screenshots/
 # =========================
 # Misc
 # =========================
+config.json
 *.local
 *.tmp
 *.swp
 *.swo
+*.docx
+.playwright-mcp
+docs/
+
+.serena/project.yml

@@ -1,0 +1,29 @@
+name: Deploy App
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: 'write'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build Image
+        run: |
+          docker build --rm -f ./docker/Dockerfile --target everysk_app_deploy -t everysk_app_deploy:latest .
+
+      - name: Deploy App
+        run: |
+          docker run --rm \
+            --env EVERYSK_API_URL=${{ vars.EVERYSK_API_URL || 'https://api.everysk.com/v2' }} \
+            --env EVERYSK_API_SID=${{ secrets.EVERYSK_API_SID }} \
+            --env EVERYSK_API_TOKEN=${{ secrets.EVERYSK_API_TOKEN }} \
+            --env EVERYSK_MANAGED_DEPLOY=true \
+            everysk_app_deploy:latest

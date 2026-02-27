@@ -1,8 +1,8 @@
 import type { ProxyOptions } from "vite";
 
 export function createDevServerProxy(): Record<string, string | ProxyOptions> {
-  const TARGET = process.env.PROXY_SERVER_TARGET_URL;
-  if (!TARGET) throw new Error("PROXY_SERVER_TARGET_URL must be set.");
+  const TARGET = process.env.EVERYSK_API_URL || "https://api.everysk.com/v2";
+  if (!TARGET) throw new Error("EVERYSK_API_URL must be set.");
 
   return {
     "/api": {
@@ -16,11 +16,11 @@ export function createDevServerProxy(): Record<string, string | ProxyOptions> {
           proxyReq.removeHeader("origin");
           proxyReq.removeHeader("referer");
 
-          const ACCOUNT_SID = process.env.ACCOUNT_SID;
-          const AUTH_TOKEN = process.env.AUTH_TOKEN;
+          const EVERYSK_API_SID = process.env.EVERYSK_API_SID;
+          const EVERYSK_API_TOKEN = process.env.EVERYSK_API_TOKEN;
 
-          if (ACCOUNT_SID && AUTH_TOKEN) {
-            proxyReq.setHeader("Authorization", `Bearer ${ACCOUNT_SID}:${AUTH_TOKEN}`);
+          if (EVERYSK_API_SID && EVERYSK_API_TOKEN) {
+            proxyReq.setHeader("Authorization", `Bearer ${EVERYSK_API_SID}:${EVERYSK_API_TOKEN}`);
           }
 
         });
