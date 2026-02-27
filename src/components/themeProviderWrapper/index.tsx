@@ -3,11 +3,13 @@ import { useMemo } from "react";
 
 import CssBaseline from '@mui/material/CssBaseline';
 import type { Theme } from "@mui/material/styles";
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { ThemeProvider } from '@mui/material/styles';
+
+import getTheme from "./themes";
 
 const ThemeProviderWrapper = ({ children }: React.PropsWithChildren) => {
 
-    const theme: Theme = useMemo(() => createTheme({}), []);
+    const theme: Theme = useMemo(() => getTheme(), []);
 
     return (
         <ThemeProvider theme={theme}>
