@@ -27,6 +27,7 @@ export const getDatastore = async ( api: AxiosInstance, id: string, workspace: s
 export const getDatastores = async (api: AxiosInstance, query: DefaultObject): Promise<Datastore[]> => {
 
   const params: DefaultObject = {
+    page_size: 20,
     ...(query ? { query: JSON.stringify(query) } : {}),
   };
 

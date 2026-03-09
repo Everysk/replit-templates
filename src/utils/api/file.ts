@@ -30,6 +30,7 @@ export const getFiles = async (api: AxiosInstance, query: DefaultObject): Promis
   const workspace = workspaceFilter?.[workspaceFilter.length - 1];
 
   const params: DefaultObject = {
+    page_size: 20,
     workspace,
     ...(query ? { query: JSON.stringify(query) } : {}),
   };
