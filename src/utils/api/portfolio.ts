@@ -30,6 +30,7 @@ export const getPortfolios = async (api: AxiosInstance, query: DefaultObject): P
     const workspace = workspaceFilter?.[workspaceFilter.length - 1];
 
     const params: DefaultObject = {
+      page_size: 20,
       workspace,
       ...(query ? { query: JSON.stringify(query) } : {}),
     };
