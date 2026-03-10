@@ -8,7 +8,9 @@ const workflowsBaseUrl = "workflows";
 
 export const getWorkspaces = async (api: AxiosInstance): Promise<Workspace[]> => {
     try {
-        const response: AxiosResponse<DefaultObject> = await api.get(workspacesBaseUrl);
+        const response: AxiosResponse<DefaultObject> = await api.get(workspacesBaseUrl, {
+            params: { page_size: 1000 },
+        });
         return response.data?.workspaces ?? [];
     } catch (error: unknown) {
         if (isAxiosError<DefaultObject>(error)) {
@@ -24,7 +26,7 @@ export const getWorkspaces = async (api: AxiosInstance): Promise<Workspace[]> =>
 };
 
 export const getWorkflows = async (api: AxiosInstance, workspace?: string): Promise<Workflow[]> => {
-    const params: Record<string, string> = {};
+    const params: Record<string, string | number> = { page_size: 20 };
     if (workspace) {
         params.workspace = workspace;
     }
@@ -48,7 +50,8 @@ export const getWorkflows = async (api: AxiosInstance, workspace?: string): Prom
 export const getWorkflowExecutions = async (api: AxiosInstance, workflowId: string): Promise<WorkflowExecution[]> => {
     try {
         const response: AxiosResponse<DefaultObject> = await api.get(
-            `${workflowsBaseUrl}/${workflowId}/workflow_executions`
+            `${workflowsBaseUrl}/${workflowId}/workflow_executions`,
+            { params: { page_size: 20 } }
         );
         return response.data?.workflow_executions ?? [];
     } catch (error: unknown) {
