@@ -104,9 +104,6 @@ const message = await anthropic.messages.create({
 - Always load the **vercel-react-best-practices** skill before writing or reviewing React components to apply performance best practices.
 - Always load the **browser-use** skill when performing any browser automation or UI interaction tasks.
 
-### Key files:
-- `src/utils/api/workflowList.ts` — API utility functions for listing workflows and workflow executions
-- `src/types/workflow.ts` — TypeScript types for Workflow and WorkflowExecution entities
 
 ---
 
