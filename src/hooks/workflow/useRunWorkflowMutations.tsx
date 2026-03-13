@@ -1,9 +1,9 @@
 import { useMutation } from "@tanstack/react-query";
 
-import useAxios from "./useAxios";
-import useAppAlert from "./useAppAlert";
-import type { DefaultObject } from "../types/defaultObject";
-import { runWorkflow, runWorkflowSync } from "../utils/api/workflow";
+import useAxios from "../useAxios";
+import useAppAlert from "../useAppAlert";
+import type { DefaultObject } from "../../types/defaultObject";
+import { runWorkflow, runWorkflowSync } from "../../utils/api/workflow";
 
 type RunWorkflowProps = {
     id: string;

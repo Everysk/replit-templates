@@ -1,3 +1,5 @@
+import type { DeleteEntityResponse, EntityListResponse, EntitySingleResponse } from "./entityQuery";
+
 export interface Workspace {
     name: string;
     group: string | null;
@@ -55,3 +57,10 @@ export type WorkflowExecutionStatus =
     | "PENDING"
     | "CANCELLED"
     | string;
+
+
+export type WorkflowSingleResponse = EntitySingleResponse<"workflow", Workflow>;
+
+export type WorkflowListResponse = EntityListResponse<"workflows", Workflow>;
+
+export type DeleteWorkflowResponse = DeleteEntityResponse<"workflows">;
