@@ -112,6 +112,39 @@ const message = await anthropic.messages.create({
 
 ### Hooks Reference
 
+**Utility**
+- `src/hooks/useAxios.tsx`
+- `src/hooks/useAppAlert.tsx`
+- `src/hooks/useAppConfig.tsx`
+- `src/hooks/useBroadcastChannel.tsx`
+- `src/hooks/useBroadcastSubscription.tsx`
+
+**Portfolio**
+- `src/hooks/portfolio/useFetchPortfolio.tsx`
+- `src/hooks/portfolio/useFetchPortfolios.tsx`
+- `src/hooks/portfolio/usePortfolioMutations.tsx`
+
+**Datastore**
+- `src/hooks/datastore/useFetchDatastore.tsx`
+- `src/hooks/datastore/useFetchDatastores.tsx`
+- `src/hooks/datastore/useDatastoreMutations.tsx`
+
+**File**
+- `src/hooks/file/useFetchFile.tsx`
+- `src/hooks/file/useFetchFiles.tsx`
+- `src/hooks/file/useFileMutations.tsx`
+
+**Workflow**
+- `src/hooks/workflow/useFetchWorkflow.tsx`
+- `src/hooks/workflow/useFetchWorkflows.tsx`
+- `src/hooks/workflow/useRunWorkflowMutations.tsx`
+
+**Workspace & Executions**
+- `src/hooks/useFetchWorkspaces.tsx`
+- `src/hooks/useFetchWorkflowExecutions.tsx`
+
+---
+
 #### Utility Hooks
 
 **`useAxios(url?: string | null)`** — `src/hooks/useAxios.tsx`
