@@ -135,10 +135,14 @@ const message = await anthropic.messages.create({
 - `src/hooks/workflow/useFetchWorkflow.tsx`
 - `src/hooks/workflow/useFetchWorkflows.tsx`
 - `src/hooks/workflow/useRunWorkflowMutations.tsx`
+- `src/hooks/workflow/useFetchWorkflowExecution.tsx`
+- `src/hooks/workflow/useFetchWorkflowExecutions.tsx`
+- `src/hooks/workflow/useFetchWorkerExecution.tsx`
+- `src/hooks/workflow/useFetchWorkerExecutions.tsx`
 
-**Workspace & Executions**
-- `src/hooks/useFetchWorkspaces.tsx`
-- `src/hooks/useFetchWorkflowExecutions.tsx`
+**Workspace**
+- `src/hooks/workspaces/useFetchWorkspace.tsx`
+- `src/hooks/workspaces/useFetchWorkspaces.tsx`
 
 ---
 
@@ -235,11 +239,11 @@ const { data, isLoading, queryKey } = useFetchDatastore({ id: "ds-123", workspac
 // data.data -> [{ datastoreId: "ds-123", col1: "value", ... }]
 ```
 
-**`useFetchInfiniteDatastore({ filters?, order?, projection?, pageSize?, queryOptions? })`** — `src/hooks/datastore/useFetchDatastores.tsx`
+**`useFetchDatastores({ filters?, order?, projection?, pageSize?, queryOptions? })`** — `src/hooks/datastore/useFetchDatastores.tsx`
 - Infinite/paginated list of datastores with cursor-based pagination. `query.data` is a flat `DatastoreWithRows[]`.
 - Returns `{ query, queryKey }`.
 ```ts
-const { query } = useFetchInfiniteDatastore({
+const { query } = useFetchDatastores({
   filters: [{ field: "workspace", value: "ws-1" }],
   pageSize: 20,
 });
@@ -269,11 +273,11 @@ const { data, isLoading, queryKey } = useFetchFile({ id: "file-123", workspace: 
 // data -> File (data.data is Base64 string)
 ```
 
-**`useFetchInfiniteFile({ filters?, order?, projection?, pageSize?, queryOptions? })`** — `src/hooks/file/useFetchFiles.tsx`
+**`useFetchFiles({ filters?, order?, projection?, pageSize?, queryOptions? })`** — `src/hooks/file/useFetchFiles.tsx`
 - Infinite/paginated list of files. `query.data` is a flat `File[]`.
 - Returns `{ query, queryKey }`.
 ```ts
-const { query } = useFetchInfiniteFile({
+const { query } = useFetchFiles({
   filters: [{ field: "workspace", value: "ws-1" }],
   pageSize: 20,
 });
@@ -301,14 +305,11 @@ const { data } = useFetchWorkflow({ id: "wf-123", workspace: "ws-1" });
 // data -> Workflow
 ```
 
-**`useFetchWorkflows({ filters?, order?, projection?, pageSize?, queryOptions? })`** — `src/hooks/workflow/useFetchWorkflows.tsx`
-- Infinite/paginated list of workflows. `query.data` is a flat `Workflow[]`.
+**`useFetchWorkflows({ workspace?, pageSize?, queryOptions? })`** — `src/hooks/workflow/useFetchWorkflows.tsx`
+- Infinite/paginated list of workflows. `workspace` is passed as a direct query param (not inside a filter). `query.data` is a flat `Workflow[]`.
 - Returns `{ query, queryKey }`.
 ```ts
-const { query } = useFetchWorkflows({
-  filters: [{ field: "workspace", value: "ws-1" }],
-  pageSize: 20,
-});
+const { query } = useFetchWorkflows({ workspace: "ws-1", pageSize: 20 });
 const workflows = query.data ?? [];
 ```
 
@@ -324,23 +325,73 @@ runAsync.mutate({ id: "wf-123", workspace: "ws-1", parameters: {} });
 
 ---
 
-#### Workspace & Execution Hooks
+#### Workspace Hooks
 
-**`useFetchWorkspaces()`** — `src/hooks/useFetchWorkspaces.tsx`
-- Fetches all workspaces. `staleTime: 60000`, `refetchOnMount: "always"`.
-- Returns `{ data: Workspace[], isLoading, queryKey, ... }`.
+**`useFetchWorkspace({ name, queryOptions? })`** — `src/hooks/workspaces/useFetchWorkspace.tsx`
+- Fetches a single `Workspace` by name. Default options: `refetchOnMount: "always"`, `staleTime: 0`, `gcTime: 0`.
+- Returns `{ ...query, queryKey }`.
 ```ts
-const { data: workspaces, isLoading } = useFetchWorkspaces();
+const { data, isLoading } = useFetchWorkspace({ name: "main" });
+// data -> Workspace
 ```
 
-**`useFetchWorkflowExecutions({ workflowIds, enabled?, refetchInterval?, staleTime? })`** — `src/hooks/useFetchWorkflowExecutions.tsx`
-- Fetches executions for multiple workflow IDs in parallel using `useQueries`. Merges all results into a flat `WorkflowExecution[]`.
-- Returns `{ data: WorkflowExecution[], isLoading, isFetching, refetch, queries }`.
+**`useFetchWorkspaces({ workspace?, pageSize?, queryOptions? })`** — `src/hooks/workspaces/useFetchWorkspaces.tsx`
+- Infinite/paginated list of workspaces with cursor-based pagination. Flattens all pages into a flat `Workspace[]` via `select`.
+- Returns `{ query, queryKey }`. `query.data` is `Workspace[]`.
 ```ts
-const { data: executions, isLoading } = useFetchWorkflowExecutions({
-  workflowIds: ["wf-123", "wf-456"],
-  refetchInterval: 5000,
+const { query } = useFetchWorkspaces({ workspace: "main", pageSize: 20 });
+const workspaces = query.data ?? [];
+```
+
+#### Workflow Execution Hooks
+
+**`useFetchWorkflowExecution({ workflowId, workflowExecutionId, workspace, queryOptions? })`** — `src/hooks/workflow/useFetchWorkflowExecution.tsx`
+- Fetches a single `WorkflowExecution` by ID. Default options: `refetchOnMount: "always"`, `staleTime: 0`, `gcTime: 0`.
+- Returns `{ ...query, queryKey }`.
+```ts
+const { data, isLoading } = useFetchWorkflowExecution({
+  workflowId: "wf-123",
+  workflowExecutionId: "exec-456",
+  workspace: "main",
 });
+// data -> WorkflowExecution
+```
+
+**`useFetchWorkflowExecutions({ workflowId, filters?, order?, projection?, pageSize?, queryOptions? })`** — `src/hooks/workflow/useFetchWorkflowExecutions.tsx`
+- Infinite/paginated list of executions for a single workflow. `query.data` is a flat `WorkflowExecution[]`.
+- `filters` must include a `workspace` filter. Returns `{ query, queryKey }`.
+```ts
+const { query } = useFetchWorkflowExecutions({
+  workflowId: "wf-123",
+  filters: [{ field: "workspace", value: "main" }],
+  pageSize: 20,
+});
+const executions = query.data ?? [];
+```
+
+**`useFetchWorkerExecution({ workflowId, workerExecutionId, workspace, queryOptions? })`** — `src/hooks/workflow/useFetchWorkerExecution.tsx`
+- Fetches a single `WorkerExecution` by ID. Default options: `refetchOnMount: "always"`, `staleTime: 0`, `gcTime: 0`.
+- Returns `{ ...query, queryKey }`.
+```ts
+const { data, isLoading } = useFetchWorkerExecution({
+  workflowId: "wf-123",
+  workerExecutionId: "wkex-456",
+  workspace: "main",
+});
+// data -> WorkerExecution
+```
+
+**`useFetchWorkerExecutions({ workflowId, workflowExecutionId, filters?, order?, projection?, pageSize?, queryOptions? })`** — `src/hooks/workflow/useFetchWorkerExecutions.tsx`
+- Infinite/paginated list of worker executions for a given workflow execution. `query.data` is a flat `WorkerExecution[]`.
+- `filters` must include a `workspace` filter. Returns `{ query, queryKey }`.
+```ts
+const { query } = useFetchWorkerExecutions({
+  workflowId: "wf-123",
+  workflowExecutionId: "wfex-456",
+  filters: [{ field: "workspace", value: "main" }],
+  pageSize: 20,
+});
+const workerExecutions = query.data ?? [];
 ```
 
 ### API Endpoints Used:
@@ -353,6 +404,10 @@ const { data: executions, isLoading } = useFetchWorkflowExecutions({
 - `DELETE /datastores/{id}` — Delete a datastore
 - `GET /workflows?workspace={name}` — List workflows in a workspace (workspace must be a direct query param, NOT inside a JSON `query` string)
 - `GET /workflows/{workflow_id}/workflow_executions` — List executions for a specific workflow (the standalone `/workflow_executions` endpoint does NOT exist)
+- `GET /workflows/{workflow_id}/workflow_executions/{execution_id}` — Get a single workflow execution
+- `GET /workflows/{workflow_id}/workflow_executions/{execution_id}/worker_executions` — List worker executions for a workflow execution
+- `GET /workflows/{workflow_id}/workflow_executions/{execution_id}/worker_executions/{worker_execution_id}` — Get a single worker execution
+- `GET /workspaces/{name}` — Get a single workspace by name
 
 ## Running
 - Dev server: `bash scripts/check-env.sh && npm run dev` (port 5000) — validates secrets before starting Vite
