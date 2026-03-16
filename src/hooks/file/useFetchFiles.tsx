@@ -25,7 +25,7 @@ const defaultQueryOptions: InfiniteOptions<File[]> = {
 };
 
 /**
- * useFetchInfiniteFile
+ * useFetchFiles
  *
  * Data-fetching hook built on TanStack Query's `useInfiniteQuery` to retrieve
  * files with cursor-based pagination.
@@ -60,7 +60,7 @@ const defaultQueryOptions: InfiniteOptions<File[]> = {
  *
  * Example:
  * ```ts
- * const { query } = useFetchInfiniteFile({
+ * const { query } = useFetchFiles({
  *   filters: [{ field: "workspace", value: "ws-1" }],
  *   pageSize: 20,
  * });
@@ -69,7 +69,7 @@ const defaultQueryOptions: InfiniteOptions<File[]> = {
  * const files = query.data ?? [];
  * ```
  */
-export function useFetchInfiniteFile({ filters = [], order = [], projection = "", pageSize = 10, queryOptions }: FetchInfiniteFileProps) {
+export function useFetchFiles({ filters = [], order = [], projection = "", pageSize = 10, queryOptions }: FetchInfiniteFileProps) {
     const { api } = useAxios();
 
     const queryKey = buildQueryKey(["files"], filters);

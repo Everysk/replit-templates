@@ -25,18 +25,18 @@ const defaultQueryOptions: InfiniteOptions<Portfolio[]> = {
 };
 
 /**
- * useFetchInfiniteFile
+ * useFetchInfinitePortfolios
  *
  * Data-fetching hook built on TanStack Query's `useInfiniteQuery` to retrieve
- * files with cursor-based pagination.
+ * portfolios with cursor-based pagination.
  *
  * It also:
- * - flattens all pages into a single `File[]` via `select`
+ * - flattens all pages into a single `Portfolio[]` via `select`
  *
  * Important notes:
- * - `query.data` returns a flat `File[]` (all pages merged).
+ * - `query.data` returns a flat `Portfolio[]` (all pages merged).
  *
- * Parameters (FetchInfiniteFileProps):
+ * Parameters (FetchInfinitePortfolioProps):
  * @param {FilterClause[]} [filters=[]]
  *   Filters applied to every page request. Must include a `workspace` filter.
  *
@@ -47,9 +47,9 @@ const defaultQueryOptions: InfiniteOptions<Portfolio[]> = {
  *   Fields to project from the API. Omitted from the request if empty.
  *
  * @param {number} [pageSize=10]
- *   Number of files to fetch per page.
+ *   Number of portfolios to fetch per page.
  *
- * @param {InfiniteOptions<File[]>} [queryOptions]
+ * @param {InfiniteOptions<Portfolio[]>} [queryOptions]
  *   TanStack Query options passed through to `useInfiniteQuery`
  *   (e.g., enabled, staleTime, gcTime, etc.).
  *
@@ -60,13 +60,13 @@ const defaultQueryOptions: InfiniteOptions<Portfolio[]> = {
  *
  * Example:
  * ```ts
- * const { query } = useFetchInfiniteFile({
+ * const { query } = useFetchInfinitePortfolios({
  *   filters: [{ field: "workspace", value: "ws-1" }],
  *   pageSize: 20,
  * });
  *
- * // Flat list of all fetched files
- * const files = query.data ?? [];
+ * // Flat list of all fetched portfolios
+ * const portfolios = query.data ?? [];
  * ```
  */
 export function useFetchPortfolios({ filters = [], order = [], projection = "", pageSize = 10, queryOptions }: FetchInfinitePortfolioProps) {
