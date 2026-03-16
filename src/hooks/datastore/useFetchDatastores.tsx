@@ -1,4 +1,5 @@
-import { useCallback, useMemo, useRef } from "react";
+//import { useCallback, useMemo, useRef } from "react";
+import { useMemo } from "react";
 import { useInfiniteQuery, type UseInfiniteQueryOptions, type QueryKey } from "@tanstack/react-query";
 
 //import type { GridApi } from "ag-grid-community";
@@ -88,7 +89,7 @@ const defaultQueryOptions: InfiniteOptions<DatastoreWithRows[]> = {
 export function useFetchInfiniteDatastore({ filters = [], order = [], projection = "", pageSize = 10, queryOptions }: FetchInfiniteDatastoreProps) {
     const { api } = useAxios();
 
-    const fetchingGuardRef = useRef(false);
+    //const fetchingGuardRef = useRef(false);
     const queryKey = buildQueryKey(["datastores"], filters);
 
     const mergedQueryOptions = useMemo<InfiniteOptions<DatastoreWithRows[]>>(() => ({

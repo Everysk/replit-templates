@@ -11,7 +11,7 @@ export function envVarsLocationPlugin(): Plugin {
         : html;
 
       const tags: HtmlTagDescriptor[] =
-        ctx.command === "build"
+        ctx.bundle != null
           ? [{ tag: "meta", attrs: { name: "app-config" }, injectTo: "head" }]
           : [];
 

@@ -26,7 +26,7 @@ const WorkspaceCombobox = ({
     fullWidth = true,
 }: WorkspaceComboboxProps) => {
     const selectedWs = useMemo(
-        () => workspaces.find((ws) => ws.name === selected) ?? null,
+        () => workspaces.find((ws) => ws.name === selected),
         [workspaces, selected]
     );
 
@@ -36,7 +36,7 @@ const WorkspaceCombobox = ({
     );
 
     return (
-        <Autocomplete<Workspace, false>
+        <Autocomplete<Workspace, false, true>
             data-testid="workspace-combobox"
             options={grouped}
             value={selectedWs}
