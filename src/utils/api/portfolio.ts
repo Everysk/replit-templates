@@ -20,13 +20,13 @@ const baseUrl = "portfolios";
  * @throws {Error} If the request fails.
  */
 export const getPortfolio = async (api: AxiosInstance, id: string, workspace: string): Promise<PortfolioSingleResponse> => {
-  const params: DefaultObject = { workspace };
-
+  
   if(!workspace){
     throw new Error("Workspace is required to fetch a portfolio");
   }
-
+  
   try {
+    const params: DefaultObject = { workspace };
     const response: AxiosResponse<PortfolioSingleResponse> = await api.get(`${baseUrl}/${id}`, { params });
     return response.data;
   } catch (error: unknown) {

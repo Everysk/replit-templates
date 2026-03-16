@@ -19,9 +19,10 @@ const baseUrl = "files";
  * @throws {Error} If the request fails.
  */
 export const getFile = async (api: AxiosInstance, id: string, workspace: string): Promise<File> => {
-  const params: DefaultObject = { workspace };
+  if (!workspace) throw new Error("Workspace filter is required to fetch a file");
 
   try {
+    const params: DefaultObject = { workspace };
     const response: AxiosResponse<FileSingleResponse> = await api.get(`${baseUrl}/${id}`, { params });
     return response.data.file;
   } catch (error: unknown) {
@@ -155,9 +156,10 @@ export const updateFile = async (api: AxiosInstance, id: string, data: Partial<F
  * @throws {Error} If the request fails.
  */
 export const deleteFile = async (api: AxiosInstance, id: string, workspace: string): Promise<DeleteEntityDefaultResponse[]> => {
-  const params: DefaultObject = { workspace };
-
+  if (!workspace) throw new Error("Workspace filter is required to delete a file");
+  
   try {
+    const params: DefaultObject = { workspace };
     const response: AxiosResponse<DeleteFileResponse> = await api.delete(`${baseUrl}/${id}`, { params });
     return response.data.files;
   } catch (error: unknown) {

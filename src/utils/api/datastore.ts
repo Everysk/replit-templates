@@ -156,9 +156,10 @@ export const updateDatastore = async (api: AxiosInstance, id: string, data: Part
  * @throws {Error} If the request fails.
  */
 export const deleteDatastore = async (api: AxiosInstance, id: string, workspace: string): Promise<DeleteEntityDefaultResponse[]> => {
-  const params: DefaultObject = { workspace };
+  if (!workspace) throw new Error("Workspace filter is required to delete a datastore");
 
   try {
+    const params: DefaultObject = { workspace };
     const response: AxiosResponse<DeleteDatastoreResponse> = await api.delete(`${baseUrl}/${id}`, { params });
     return response.data.datastores;
   } catch (error: unknown) {
