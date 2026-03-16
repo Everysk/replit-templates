@@ -3,16 +3,16 @@ import { useInfiniteQuery, type UseInfiniteQueryOptions, type QueryKey } from "@
 
 import useAxios from "../useAxios";
 import { getWorkflows } from "../../utils/api/workflow";
-import type { FetchEntitiesParams } from "../../types/entityQuery";
-import { buildQueryKey, buildQueryObject } from "../../utils/api/entityQuery";
 import type { Workflow, WorkflowListResponse } from "../../types/workflow";
 
 type PageToken = string | null;
 
 type InfiniteOptions<TData> = Omit<UseInfiniteQueryOptions<WorkflowListResponse, Error, TData, QueryKey, PageToken>,"queryKey" | "queryFn" | "initialPageParam" | "getNextPageParam">;
 
-export type FetchInfiniteWorkflowProps = FetchEntitiesParams<Workflow[], InfiniteOptions<Workflow[]>> & {
+export type FetchInfiniteWorkflowProps = {
+    workspace?: string;
     pageSize?: number;
+    queryOptions?: InfiniteOptions<Workflow[]>;
 };
 
 const defaultQueryOptions: InfiniteOptions<Workflow[]> = {
@@ -25,20 +25,14 @@ const defaultQueryOptions: InfiniteOptions<Workflow[]> = {
  * useFetchWorkflows
  *
  * Data-fetching hook built on TanStack Query's `useInfiniteQuery` to retrieve
- * workflows with cursor-based pagination.
+ * workflows with cursor-based pagination using the legacy method (workspace as query param).
  *
  * Automatically flattens all pages into a single `Workflow[]` via `select`.
  *
  * Note: `query.data` returns a flat `Workflow[]` with all fetched items merged across pages.
  *
- * @param {FilterClause[]} [filters=[]]
- *   Filters applied to every page request. Must include a `workspace` filter.
- *
- * @param {string[]} [order=[]]
- *   Sorting applied to every page request.
- *
- * @param {string} [projection=""]
- *   Fields to project from the API. Omitted from the request if empty.
+ * @param {string} [workspace]
+ *   Current workspace name. Sent as a query param via the legacy method, required by some API configurations.
  *
  * @param {number} [pageSize=10]
  *   Number of workflows to fetch per page.
@@ -53,19 +47,16 @@ const defaultQueryOptions: InfiniteOptions<Workflow[]> = {
  *
  * @example
  * ```ts
- * const { query } = useFetchWorkflows({
- *   filters: [{ field: "workspace", value: "ws-1" }],
- *   pageSize: 20,
- * });
+ * const { query } = useFetchWorkflows({ workspace: "ws-1", pageSize: 20 });
  *
  * // Flat list of all fetched workflows
  * const workflows = query.data ?? [];
  * ```
  */
-export function useFetchWorkflows({ filters = [], order = [], projection = "", pageSize = 10, queryOptions }: FetchInfiniteWorkflowProps) {
+export function useFetchWorkflows({ workspace, pageSize = 10, queryOptions }: FetchInfiniteWorkflowProps) {
     const { api } = useAxios();
 
-    const queryKey = buildQueryKey(["workflows"], filters);
+    const queryKey: QueryKey = ["workflows", workspace ?? null];
 
     const mergedQueryOptions = useMemo<InfiniteOptions<Workflow[]>>(() => ({
         ...defaultQueryOptions,
@@ -78,15 +69,7 @@ export function useFetchWorkflows({ filters = [], order = [], projection = "", p
         getNextPageParam: (lastPage) => lastPage.next_page_token ?? undefined,
 
         queryFn: async ({ pageParam }) => {
-            const queryFilter = buildQueryObject({
-                filters,
-                order,
-                projection,
-                pageSize,
-                pageToken: pageParam ?? undefined,
-            });
-
-            return await getWorkflows(api, queryFilter);
+            return await getWorkflows(api, workspace, pageSize, pageParam ?? undefined);
         },
 
         select: (data) => data.pages.flatMap((p) => p.workflows),

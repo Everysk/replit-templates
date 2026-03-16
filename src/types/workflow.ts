@@ -24,7 +24,7 @@ export interface WorkflowExecution {
     workflow_name: string;
     workspace: string;
     status: string;
-    run_status: WorkflowExecutionStatus;
+    run_status: string;
     duration: number;
     real_execution_time: number;
     total_execution_time: number;
@@ -40,13 +40,25 @@ export interface WorkflowExecution {
     [key: string]: unknown;
 }
 
-export type WorkflowExecutionStatus =
-    | "RUNNING"
-    | "SUCCEEDED"
-    | "FAILED"
-    | "PENDING"
-    | "CANCELLED"
-    | string;
+export type WorkerExecution = {
+    id: string;
+    status: string;
+    worker_id: string;
+    worker_name: string;
+    worker_type: string;
+    workflow_execution_id: string;
+    workflow_id: string;
+    workflow_name: string;
+    trigger: string;
+    created: number;
+    updated: number;
+    started: number;
+    duration: number;
+    cpu_time: number;
+    result: Record<string, unknown>;
+    input_params: Record<string, unknown>;
+    version: string;
+};
 
 
 export type WorkflowSingleResponse = EntitySingleResponse<"workflow", Workflow>;
@@ -58,3 +70,7 @@ export type DeleteWorkflowResponse = DeleteEntityResponse<"workflows">;
 export type WorkflowExecutionSingleResponse = EntitySingleResponse<"workflow_execution", WorkflowExecution>;
 
 export type WorkflowExecutionListResponse = EntityListResponse<"workflow_executions", WorkflowExecution>;
+
+export type WorkerExecutionSingleResponse = EntitySingleResponse<"worker_execution", WorkerExecution>;
+
+export type WorkerExecutionListResponse = {parallel_index_max:number} & EntityListResponse<"worker_executions", WorkerExecution>;

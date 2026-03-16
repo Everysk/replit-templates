@@ -35,7 +35,7 @@ const defaultQueryOptions: InfiniteOptions<DatastoreWithRows[]> = {
 };
 
 /**
- * useFetchInfiniteDatastore
+ * useFetchDatastores
  *
  * Data-fetching hook built on TanStack Query's `useInfiniteQuery` to retrieve
  * datastores with cursor-based pagination.
@@ -74,7 +74,7 @@ const defaultQueryOptions: InfiniteOptions<DatastoreWithRows[]> = {
  *
  * Example:
  * ```ts
- * const { query, events } = useFetchInfiniteDatastore({
+ * const { query, events } = useFetchDatastores({
  *   filters: [{ field: "workspace", value: "ws-1" }],
  *   pageSize: 20,
  * });
@@ -86,7 +86,7 @@ const defaultQueryOptions: InfiniteOptions<DatastoreWithRows[]> = {
  * <AgGridReact onBodyScroll={() => events.handleFetchIfGridEmptyOrNearEnd(gridApi)} />
  * ```
  */
-export function useFetchInfiniteDatastore({ filters = [], order = [], projection = "", pageSize = 10, queryOptions }: FetchInfiniteDatastoreProps) {
+export function useFetchDatastores({ filters = [], order = [], projection = "", pageSize = 10, queryOptions }: FetchInfiniteDatastoreProps) {
     const { api } = useAxios();
 
     //const fetchingGuardRef = useRef(false);
