@@ -1,7 +1,6 @@
 import { isAxiosError, type AxiosInstance, type AxiosResponse } from "axios";
 
 import type { DefaultObject } from "../../types/defaultObject";
-import type { FilterExpression, QueryObject } from "../../types/entityQuery";
 import type { Workspace, WorkspaceListResponse, WorkspaceSingleResponse } from "../../types/workspace";
 
 const baseUrl = "workspaces";
@@ -39,27 +38,22 @@ export const getWorkspace = async (api: AxiosInstance, name: string): Promise<Wo
 /**
  * getWorkspaces
  *
- * Fetches a list of workspaces using a query object (filters, order, pagination, etc.).
- *
- * Note: `workspace` is extracted from the query filters and sent as a separate
- * query param alongside the serialized query object.
+ * Fetches a list of workspaces with optional cursor-based pagination.
  *
  * @param {AxiosInstance} api - Axios instance.
- * @param {QueryObject} query - Query object built via `buildQueryObject`.
+ * @param {string} [workspace] - Current workspace name. Sent as a query param via the legacy method, required by some API configurations.
+ * @param {number} [pageSize] - Number of items per page.
+ * @param {string} [pageToken] - Cursor token for the next page.
  * @returns {Promise<WorkspaceListResponse>} List of workspaces.
  *
  * @throws {Error} If the request fails.
  */
-export const getWorkspaces = async (api: AxiosInstance, query: QueryObject): Promise<WorkspaceListResponse> => {
-  const workspaceFilter = query.filters.find((filter: FilterExpression) => filter[0] === "workspace");
-  const workspace = workspaceFilter?.[workspaceFilter.length - 1];
+export const getWorkspaces = async (api: AxiosInstance, workspace?: string, pageSize?: number, pageToken?: string): Promise<WorkspaceListResponse> => {
+  const params: DefaultObject = {};
 
-  if (!workspace) throw new Error("Workspace filter is required to list workspaces");
-
-  const params: DefaultObject = {
-    workspace,
-    ...(query ? { query: JSON.stringify(query) } : {}),
-  };
+  if (workspace) params.workspace = workspace;
+  if (pageSize) params.page_size = pageSize;
+  if (pageToken) params.page_token = pageToken;
 
   try {
     const response: AxiosResponse<WorkspaceListResponse> = await api.get(baseUrl, { params });

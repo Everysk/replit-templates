@@ -4,8 +4,6 @@ import { useInfiniteQuery, type UseInfiniteQueryOptions, type QueryKey } from "@
 import useAxios from "../useAxios";
 import { getWorkspaces } from "../../utils/api/workspace";
 import type { Workspace, WorkspaceListResponse } from "../../types/workspace";
-import type { FetchEntitiesParams } from "../../types/entityQuery";
-import { buildQueryKey, buildQueryObject } from "../../utils/api/entityQuery";
 
 type PageToken = string | null;
 
@@ -14,8 +12,10 @@ type InfiniteOptions<TData> = Omit<
     "queryKey" | "queryFn" | "initialPageParam" | "getNextPageParam"
 >;
 
-export type FetchInfiniteWorkspaceProps = FetchEntitiesParams<Workspace[], InfiniteOptions<Workspace[]>> & {
+export type FetchInfiniteWorkspaceProps = {
+    workspace?: string;
     pageSize?: number;
+    queryOptions?: InfiniteOptions<Workspace[]>;
 };
 
 const defaultQueryOptions: InfiniteOptions<Workspace[]> = {
@@ -35,11 +35,10 @@ const defaultQueryOptions: InfiniteOptions<Workspace[]> = {
  *
  * Important notes:
  * - `query.data` returns a flat `Workspace[]` (all pages merged).
+ * - `workspace` is required by some API configurations to avoid being blocked.
  *
  * @param props - FetchInfiniteWorkspaceProps
- *   - `filters`: Filters applied to every page request. Must include a `workspace` filter.
- *   - `order`: Sorting applied to every page request.
- *   - `projection`: Fields to project from the API. Omitted from the request if empty.
+ *   - `workspace`: Current workspace name sent as a query param.
  *   - `pageSize`: Number of workspaces to fetch per page.
  *   - `queryOptions`: TanStack Query options passed through to `useInfiniteQuery`.
  *
@@ -50,19 +49,16 @@ const defaultQueryOptions: InfiniteOptions<Workspace[]> = {
  *
  * Example:
  * ```ts
- * const { query } = useFetchWorkspaces({
- *   filters: [{ field: "workspace", value: "main" }],
- *   pageSize: 20,
- * });
+ * const { query } = useFetchWorkspaces({ workspace: "main", pageSize: 20 });
  *
  * // Flat list of all fetched workspaces
  * const workspaces = query.data ?? [];
  * ```
  */
-export function useFetchWorkspaces({ filters = [], order = [], projection = "", pageSize = 10, queryOptions }: FetchInfiniteWorkspaceProps) {
+export function useFetchWorkspaces({ workspace, pageSize = 10, queryOptions }: FetchInfiniteWorkspaceProps) {
     const { api } = useAxios();
 
-    const queryKey = buildQueryKey(["workspaces"], filters);
+    const queryKey: QueryKey = ["workspaces", workspace ?? null];
 
     const mergedQueryOptions = useMemo<InfiniteOptions<Workspace[]>>(() => ({
         ...defaultQueryOptions,
@@ -75,15 +71,7 @@ export function useFetchWorkspaces({ filters = [], order = [], projection = "", 
         getNextPageParam: (lastPage) => lastPage.next_page_token ?? undefined,
 
         queryFn: async ({ pageParam }) => {
-            const queryFilter = buildQueryObject({
-                filters,
-                order,
-                projection,
-                pageSize,
-                pageToken: pageParam ?? undefined,
-            });
-
-            return await getWorkspaces(api, queryFilter);
+            return await getWorkspaces(api, workspace, pageSize, pageParam ?? undefined);
         },
 
         select: (data) => data.pages.flatMap((p) => p.workspaces),

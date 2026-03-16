@@ -3,8 +3,8 @@ import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import useAxios from "../useAxios";
-import type { Workspace } from "../../types/workspace";
 import useAppAlert from "../useAppAlert";
+import type { Workspace } from "../../types/workspace";
 import { getWorkspace } from "../../utils/api/workspace";
 import type { EntityQueryOptions } from "../../types/entityQuery";
 
