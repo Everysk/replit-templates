@@ -1,8 +1,8 @@
 import { isAxiosError, type AxiosInstance, type AxiosResponse } from "axios";
 
 import type { DefaultObject } from "../../types/defaultObject";
-import type { Workflow, WorkflowListResponse, WorkflowSingleResponse } from "../../types/workflow";
 import type { FilterExpression, QueryObject } from "../../types/entityQuery";
+import type { Workflow, WorkflowExecution, WorkflowExecutionListResponse, WorkflowExecutionSingleResponse, WorkflowListResponse, WorkflowSingleResponse } from "../../types/workflow";
 
 const baseUrl = "workflows";
 
@@ -161,5 +161,76 @@ export const getWorkflows = async (api: AxiosInstance, query: QueryObject): Prom
     }
 
     throw new Error("Error listing workflows");
+  }
+};
+
+/**
+ * Fetches a single workflow execution by ID.
+ *
+ * @param api - Axios instance used to make the HTTP request.
+ * @param workflowId - The unique identifier of the workflow.
+ * @param executionId - The unique identifier of the workflow execution to fetch.
+ * @param workspace - The workspace in which the workflow execution resides.
+ * @returns A promise that resolves with the {@link WorkflowExecution} object.
+ * @throws {Error} If `workspace` is not provided.
+ * @throws {Error} If the request fails.
+ */
+export const getWorkflowExecution = async (api: AxiosInstance, workflowId: string, executionId: string, workspace: string): Promise<WorkflowExecution> => {
+  if (!workspace) {
+    throw new Error("Workspace is required to fetch a workflow execution");
+  }
+
+  try {
+    const params: DefaultObject = { workspace, workflow_execution_id: executionId };
+    const response: AxiosResponse<WorkflowExecutionSingleResponse> = await api.get(`${baseUrl}/${workflowId}/workflow_executions`, { params });
+    return response.data.workflow_execution;
+  } catch (error: unknown) {
+    if (isAxiosError<DefaultObject>(error)) {
+      throw new Error(error.message || "Error fetching workflow execution");
+    }
+
+    if (error instanceof Error) {
+      throw error;
+    }
+
+    throw new Error("Error fetching workflow execution");
+  }
+};
+
+/**
+ * Fetches a paginated list of workflow executions matching the given query.
+ *
+ * @param api - Axios instance used to make the HTTP request.
+ * @param workflowId - The unique identifier of the workflow whose executions to list.
+ * @param query - Query object containing filters, pagination, and sorting options.
+ *   Must include a `workspace` filter expression.
+ * @returns A promise that resolves with a {@link WorkflowExecutionListResponse} containing the matched executions.
+ * @throws {Error} If the `workspace` filter is not present in `query.filters`.
+ * @throws {Error} If the request fails.
+ */
+export const getWorkflowExecutions = async (api: AxiosInstance, workflowId: string, query: QueryObject): Promise<WorkflowExecutionListResponse> => {
+  const workspaceFilter = query.filters.find((filter: FilterExpression) => filter[0] === "workspace");
+  const workspace = workspaceFilter?.[workspaceFilter.length - 1];
+
+  if (!workspace) throw new Error("Workspace filter is required to list workflows");
+
+  try {
+    const params: DefaultObject = {
+      workspace,
+      ...(query ? { query: JSON.stringify(query) } : {}),
+    };
+
+    const response: AxiosResponse<WorkflowExecutionListResponse> = await api.get(`${baseUrl}/${workflowId}/workflow_executions`, { params });
+    return response.data;
+  } catch (error: unknown) {
+    if (isAxiosError<DefaultObject>(error)) {
+      throw new Error(error.message || "Error listing workflow executions");
+    }
+
+    if (error instanceof Error) {
+      throw error;
+    }
+
+    throw new Error("Error listing workflow executions");
   }
 };

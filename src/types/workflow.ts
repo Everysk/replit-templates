@@ -1,15 +1,5 @@
 import type { DeleteEntityResponse, EntityListResponse, EntitySingleResponse } from "./entityQuery";
 
-export interface Workspace {
-    name: string;
-    group: string | null;
-    description: string;
-    version: string;
-    created: number;
-    updated: number;
-    [key: string]: unknown;
-}
-
 export interface Workflow {
     id: string;
     name: string;
@@ -64,3 +54,7 @@ export type WorkflowSingleResponse = EntitySingleResponse<"workflow", Workflow>;
 export type WorkflowListResponse = EntityListResponse<"workflows", Workflow>;
 
 export type DeleteWorkflowResponse = DeleteEntityResponse<"workflows">;
+
+export type WorkflowExecutionSingleResponse = EntitySingleResponse<"workflow_execution", WorkflowExecution>;
+
+export type WorkflowExecutionListResponse = EntityListResponse<"workflow_executions", WorkflowExecution>;
