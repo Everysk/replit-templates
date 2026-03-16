@@ -5,8 +5,18 @@ import { useQuery } from "@tanstack/react-query";
 import useAxios from "./useAxios";
 import useAppAlert from "./useAppAlert";
 import { getWorkspaces } from "../utils/api/workflowList";
-import type { Workspace } from "../types/workflow";
+import type { Workspace } from "../types/workspace";
 
+/**
+ * useFetchWorkspaces
+ *
+ * @deprecated Use `useFetchWorkspaces` from `./workspaces/useFetchWorkspaces` instead,
+ * which supports cursor-based pagination and follows the standard entity-fetching pattern.
+ *
+ * Data-fetching hook to retrieve a flat list of workspaces.
+ *
+ * @returns TanStack Query result extended with `queryKey`.
+ */
 const useFetchWorkspaces = () => {
     const { api } = useAxios();
     const { showAlert } = useAppAlert();
