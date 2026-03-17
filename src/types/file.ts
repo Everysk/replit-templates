@@ -1,3 +1,5 @@
+import type { EntitySingleResponse, EntityListResponse, DeleteEntityResponse } from "./entityQuery";
+
 export type File = {
     id: string;
     workspace: string;
@@ -16,3 +18,9 @@ export type File = {
     data: string | null;
     tags?: string[];
 }
+
+export type FileSingleResponse = EntitySingleResponse<"file", File>;
+
+export type FileListResponse = EntityListResponse<"files", File>;
+
+export type DeleteFileResponse = DeleteEntityResponse<"files">;

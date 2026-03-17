@@ -104,16 +104,295 @@ const message = await anthropic.messages.create({
 - Always load the **vercel-react-best-practices** skill before writing or reviewing React components to apply performance best practices.
 - Always load the **browser-use** skill when performing any browser automation or UI interaction tasks.
 
-### Key files:
-- `src/hooks/useFetchPortfolio.tsx` — TanStack Query hook for fetching portfolios
-- `src/hooks/usePortfolioMutations.tsx` — Mutation hook for portfolio CRUD
-- `src/hooks/useFetchDatastore.tsx` — TanStack Query hook for fetching datastores
-- `src/hooks/useDatastoreMutations.tsx` — Mutation hook for datastore CRUD
-- `src/hooks/useFetchWorkspaces.tsx` — TanStack Query hook for fetching workspaces
-- `src/hooks/useFetchWorkflows.tsx` — TanStack Query hook for fetching workflows by workspace
-- `src/hooks/useFetchWorkflowExecutions.tsx` — TanStack Query hook using `useQueries` to fetch executions per-workflow
-- `src/utils/api/workflowList.ts` — API utility functions for listing workflows and workflow executions
-- `src/types/workflow.ts` — TypeScript types for Workflow and WorkflowExecution entities
+
+---
+
+### Hooks Reference
+
+**Utility**
+- `src/hooks/useAxios.tsx`
+- `src/hooks/useAppAlert.tsx`
+- `src/hooks/useAppConfig.tsx`
+- `src/hooks/useBroadcastChannel.tsx`
+- `src/hooks/useBroadcastSubscription.tsx`
+
+**Portfolio**
+- `src/hooks/portfolio/useFetchPortfolio.tsx`
+- `src/hooks/portfolio/useFetchPortfolios.tsx`
+- `src/hooks/portfolio/usePortfolioMutations.tsx`
+
+**Datastore**
+- `src/hooks/datastore/useFetchDatastore.tsx`
+- `src/hooks/datastore/useFetchDatastores.tsx`
+- `src/hooks/datastore/useDatastoreMutations.tsx`
+
+**File**
+- `src/hooks/file/useFetchFile.tsx`
+- `src/hooks/file/useFetchFiles.tsx`
+- `src/hooks/file/useFileMutations.tsx`
+
+**Workflow**
+- `src/hooks/workflow/useFetchWorkflow.tsx`
+- `src/hooks/workflow/useFetchWorkflows.tsx`
+- `src/hooks/workflow/useRunWorkflowMutations.tsx`
+- `src/hooks/workflow/useFetchWorkflowExecution.tsx`
+- `src/hooks/workflow/useFetchWorkflowExecutions.tsx`
+- `src/hooks/workflow/useFetchWorkerExecution.tsx`
+- `src/hooks/workflow/useFetchWorkerExecutions.tsx`
+
+**Workspace**
+- `src/hooks/workspaces/useFetchWorkspace.tsx`
+- `src/hooks/workspaces/useFetchWorkspaces.tsx`
+
+---
+
+#### Utility Hooks
+
+**`useAxios(url?: string | null)`** — `src/hooks/useAxios.tsx`
+- Returns `{ api }`: memoized Axios instance with `baseURL=/api`.
+- Request interceptor for GET/DELETE: extracts `workspace` from `params.query` (JSON string) and injects it as `params.workspace`.
+- Use `/api` — no custom URL needed. In dev, Vite proxies it; in prod, the gateway resolves it.
+```ts
+const { api } = useAxios();
+api.get("/portfolios").then(res => console.log(res.data));
+```
+
+**`useAppAlert()`** — `src/hooks/useAppAlert.tsx`
+- Returns `{ showAlert(options), hideAlert() }` from `AppAlertContext`.
+- Throws if used outside `<AppAlertProvider>`.
+```ts
+const { showAlert } = useAppAlert();
+showAlert({ message: "Saved.", severity: "success", autoHideDuration: 3000 });
+```
+
+**`useAppConfig()`** — `src/hooks/useAppConfig.tsx`
+- Returns `{ appId, appEnvironmentVar }` from `AppConfigContext`.
+- Throws if used outside `<AppConfigProvider>`.
+```ts
+const { appId, appEnvironmentVar } = useAppConfig();
+```
+
+**`useBroadcastChannel()`** — `src/hooks/useBroadcastChannel.tsx`
+- Returns `{ post(message), subscribe(fn), lastMessage }` from `BroadcastChannelContext`.
+- Throws if used outside `<BroadcastChannelProvider>`.
+```ts
+const { subscribe, post } = useBroadcastChannel();
+useEffect(() => {
+  const unsub = subscribe((msg) => console.log(msg));
+  return unsub;
+}, [subscribe]);
+post({ type: "PING", payload: { at: Date.now() } });
+```
+
+**`useBroadcastSubscription(handler)`** — `src/hooks/useBroadcastSubscription.tsx`
+- Higher-level: subscribes on mount, unsubscribes on unmount. Uses a ref-backed handler to avoid re-subscriptions on re-renders.
+```ts
+useBroadcastSubscription((msg) => {
+  if (msg.type === "PING") console.log("ping:", msg.payload);
+});
+```
+
+---
+
+#### Portfolio Hooks
+
+**`useFetchPortfolio({ id, workspace, queryOptions? })`** — `src/hooks/portfolio/useFetchPortfolio.tsx`
+- Fetches a single `Portfolio` by ID. Uses `useQuery`. Default options: `refetchOnMount: "always"`, `staleTime: 0`, `gcTime: 0`.
+- Returns `{ ...query, queryKey }`. Pass `queryKey` to `usePortfolioMutations` for cache invalidation.
+```ts
+const { data, isLoading, queryKey } = useFetchPortfolio({ id: "pf-123", workspace: "ws-1" });
+// data -> Portfolio
+```
+
+**`useFetchPortfolios({ filters?, order?, projection?, pageSize?, queryOptions? })`** — `src/hooks/portfolio/useFetchPortfolios.tsx`
+- Infinite/paginated list of portfolios. Uses `useInfiniteQuery`. Flattens all pages into a flat `Portfolio[]` via `select`.
+- Returns `{ query, queryKey }`. `query.data` is `Portfolio[]`.
+```ts
+const { query } = useFetchPortfolios({
+  filters: [{ field: "workspace", value: "ws-1" }],
+  pageSize: 20,
+});
+const portfolios = query.data ?? [];
+```
+
+**`usePortfolioMutations({ queryKey? })`** — `src/hooks/portfolio/usePortfolioMutations.tsx`
+- Returns `{ create, update, remove }` TanStack mutation results.
+- Shows success/error alerts via `useAppAlert`. Invalidates `queryKey` on success if provided.
+- `remove` requires `{ id, workspace }`.
+```ts
+const { create, update, remove } = usePortfolioMutations({ queryKey });
+create.mutate({ data: { name: "My Portfolio", base_currency: "USD", date: "2026-01-08", workspace: "ws-1", securities: [] } });
+update.mutate({ id: "pf-123", data: { name: "Renamed" } });
+remove.mutate({ id: "pf-123", workspace: "ws-1" });
+```
+
+---
+
+#### Datastore Hooks
+
+**`useFetchDatastore({ id, workspace, queryOptions? })`** — `src/hooks/datastore/useFetchDatastore.tsx`
+- Fetches a single datastore by ID. Returns `DatastoreWithRows`: full `Datastore` shape with `data` as `DefaultObject[]` (rows transformed via `datastoreToObject`).
+- Returns `{ ...query, queryKey }`.
+```ts
+const { data, isLoading, queryKey } = useFetchDatastore({ id: "ds-123", workspace: "ws-1" });
+// data -> DatastoreWithRows
+// data.data -> [{ datastoreId: "ds-123", col1: "value", ... }]
+```
+
+**`useFetchDatastores({ filters?, order?, projection?, pageSize?, queryOptions? })`** — `src/hooks/datastore/useFetchDatastores.tsx`
+- Infinite/paginated list of datastores with cursor-based pagination. `query.data` is a flat `DatastoreWithRows[]`.
+- Returns `{ query, queryKey }`.
+```ts
+const { query } = useFetchDatastores({
+  filters: [{ field: "workspace", value: "ws-1" }],
+  pageSize: 20,
+});
+const datastores = query.data ?? [];
+```
+
+**`useDatastoreMutations({ queryKey? })`** — `src/hooks/datastore/useDatastoreMutations.tsx`
+- Returns `{ create, update, remove }`. Shows alerts. Invalidates `queryKey` on success.
+- `remove` requires `{ id, workspace }`.
+- `create`/`update` accept `data.data` as `[["col1", "col2"], ["val1", "val2"], ...]` (header row + data rows).
+```ts
+const { create, update, remove } = useDatastoreMutations({ queryKey });
+create.mutate({ data: { name: "My DS", workspace: "ws-1", data: [["id", "name"], ["001", "Alice"]] } });
+update.mutate({ id: "ds-123", data: { name: "Renamed", data: [["id", "name"], ["001", "Alice"]] } });
+remove.mutate({ id: "ds-123", workspace: "ws-1" });
+```
+
+---
+
+#### File Hooks
+
+**`useFetchFile({ id, workspace, queryOptions? })`** — `src/hooks/file/useFetchFile.tsx`
+- Fetches a single `File` by ID. `File.data` is Base64-encoded content when present.
+- Returns `{ ...query, queryKey }`.
+```ts
+const { data, isLoading, queryKey } = useFetchFile({ id: "file-123", workspace: "ws-1" });
+// data -> File (data.data is Base64 string)
+```
+
+**`useFetchFiles({ filters?, order?, projection?, pageSize?, queryOptions? })`** — `src/hooks/file/useFetchFiles.tsx`
+- Infinite/paginated list of files. `query.data` is a flat `File[]`.
+- Returns `{ query, queryKey }`.
+```ts
+const { query } = useFetchFiles({
+  filters: [{ field: "workspace", value: "ws-1" }],
+  pageSize: 20,
+});
+const files = query.data ?? [];
+```
+
+**`useFileMutations({ queryKey? })`** — `src/hooks/file/useFileMutations.tsx`
+- Returns `{ create, update, remove }`. Shows alerts. Invalidates `queryKey` on success.
+- File content must be raw Base64 (no `data:<mime>;base64,` prefix). `remove` requires `{ id, workspace }`.
+```ts
+const { create } = useFileMutations({ queryKey });
+await create.mutateAsync({
+  data: { name: "report.txt", workspace: "ws-1", content_type: "text/plain", version: "1", link_uid: null, data: "SGVsbG8=" }
+});
+```
+
+---
+
+#### Workflow Hooks
+
+**`useFetchWorkflow({ id, workspace, queryOptions? })`** — `src/hooks/workflow/useFetchWorkflow.tsx`
+- Fetches a single `Workflow` by ID. Returns `{ ...query, queryKey }`.
+```ts
+const { data } = useFetchWorkflow({ id: "wf-123", workspace: "ws-1" });
+// data -> Workflow
+```
+
+**`useFetchWorkflows({ workspace?, pageSize?, queryOptions? })`** — `src/hooks/workflow/useFetchWorkflows.tsx`
+- Infinite/paginated list of workflows. `workspace` is passed as a direct query param (not inside a filter). `query.data` is a flat `Workflow[]`.
+- Returns `{ query, queryKey }`.
+```ts
+const { query } = useFetchWorkflows({ workspace: "ws-1", pageSize: 20 });
+const workflows = query.data ?? [];
+```
+
+**`useWorkflowRunMutations()`** — `src/hooks/workflow/useRunWorkflowMutations.tsx`
+- Returns `{ runAsync, runSync }`. Both accept `{ id, workspace, parameters }`.
+- `runSync` returns the execution result immediately (preferred when output is needed).
+- `runAsync` starts execution without waiting for result.
+```ts
+const { runSync, runAsync } = useWorkflowRunMutations();
+const result = await runSync.mutateAsync({ id: "wf-123", workspace: "ws-1", parameters: { UID: "ABC" } });
+runAsync.mutate({ id: "wf-123", workspace: "ws-1", parameters: {} });
+```
+
+---
+
+#### Workspace Hooks
+
+**`useFetchWorkspace({ name, queryOptions? })`** — `src/hooks/workspaces/useFetchWorkspace.tsx`
+- Fetches a single `Workspace` by name. Default options: `refetchOnMount: "always"`, `staleTime: 0`, `gcTime: 0`.
+- Returns `{ ...query, queryKey }`.
+```ts
+const { data, isLoading } = useFetchWorkspace({ name: "main" });
+// data -> Workspace
+```
+
+**`useFetchWorkspaces({ workspace?, pageSize?, queryOptions? })`** — `src/hooks/workspaces/useFetchWorkspaces.tsx`
+- Infinite/paginated list of workspaces with cursor-based pagination. Flattens all pages into a flat `Workspace[]` via `select`.
+- Returns `{ query, queryKey }`. `query.data` is `Workspace[]`.
+```ts
+const { query } = useFetchWorkspaces({ workspace: "main", pageSize: 20 });
+const workspaces = query.data ?? [];
+```
+
+#### Workflow Execution Hooks
+
+**`useFetchWorkflowExecution({ workflowId, workflowExecutionId, workspace, queryOptions? })`** — `src/hooks/workflow/useFetchWorkflowExecution.tsx`
+- Fetches a single `WorkflowExecution` by ID. Default options: `refetchOnMount: "always"`, `staleTime: 0`, `gcTime: 0`.
+- Returns `{ ...query, queryKey }`.
+```ts
+const { data, isLoading } = useFetchWorkflowExecution({
+  workflowId: "wf-123",
+  workflowExecutionId: "exec-456",
+  workspace: "main",
+});
+// data -> WorkflowExecution
+```
+
+**`useFetchWorkflowExecutions({ workflowId, filters?, order?, projection?, pageSize?, queryOptions? })`** — `src/hooks/workflow/useFetchWorkflowExecutions.tsx`
+- Infinite/paginated list of executions for a single workflow. `query.data` is a flat `WorkflowExecution[]`.
+- `filters` must include a `workspace` filter. Returns `{ query, queryKey }`.
+```ts
+const { query } = useFetchWorkflowExecutions({
+  workflowId: "wf-123",
+  filters: [{ field: "workspace", value: "main" }],
+  pageSize: 20,
+});
+const executions = query.data ?? [];
+```
+
+**`useFetchWorkerExecution({ workflowId, workerExecutionId, workspace, queryOptions? })`** — `src/hooks/workflow/useFetchWorkerExecution.tsx`
+- Fetches a single `WorkerExecution` by ID. Default options: `refetchOnMount: "always"`, `staleTime: 0`, `gcTime: 0`.
+- Returns `{ ...query, queryKey }`.
+```ts
+const { data, isLoading } = useFetchWorkerExecution({
+  workflowId: "wf-123",
+  workerExecutionId: "wkex-456",
+  workspace: "main",
+});
+// data -> WorkerExecution
+```
+
+**`useFetchWorkerExecutions({ workflowId, workflowExecutionId, filters?, order?, projection?, pageSize?, queryOptions? })`** — `src/hooks/workflow/useFetchWorkerExecutions.tsx`
+- Infinite/paginated list of worker executions for a given workflow execution. `query.data` is a flat `WorkerExecution[]`.
+- `filters` must include a `workspace` filter. Returns `{ query, queryKey }`.
+```ts
+const { query } = useFetchWorkerExecutions({
+  workflowId: "wf-123",
+  workflowExecutionId: "wfex-456",
+  filters: [{ field: "workspace", value: "main" }],
+  pageSize: 20,
+});
+const workerExecutions = query.data ?? [];
+```
 
 ### API Endpoints Used:
 - `GET /workspaces` — List all workspaces
@@ -125,6 +404,10 @@ const message = await anthropic.messages.create({
 - `DELETE /datastores/{id}` — Delete a datastore
 - `GET /workflows?workspace={name}` — List workflows in a workspace (workspace must be a direct query param, NOT inside a JSON `query` string)
 - `GET /workflows/{workflow_id}/workflow_executions` — List executions for a specific workflow (the standalone `/workflow_executions` endpoint does NOT exist)
+- `GET /workflows/{workflow_id}/workflow_executions/{execution_id}` — Get a single workflow execution
+- `GET /workflows/{workflow_id}/workflow_executions/{execution_id}/worker_executions` — List worker executions for a workflow execution
+- `GET /workflows/{workflow_id}/workflow_executions/{execution_id}/worker_executions/{worker_execution_id}` — Get a single worker execution
+- `GET /workspaces/{name}` — Get a single workspace by name
 
 ## Running
 - Dev server: `bash scripts/check-env.sh && npm run dev` (port 5000) — validates secrets before starting Vite

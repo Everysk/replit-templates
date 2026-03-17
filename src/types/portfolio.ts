@@ -1,3 +1,5 @@
+import type { DeleteEntityResponse, EntityListResponse, EntitySingleResponse } from "./entityQuery";
+
 export type Security = {
   instrument_type: string | null;
   coupon: unknown | null;
@@ -72,3 +74,9 @@ export type Portfolio = {
     storage?:boolean;
     check_securities?:boolean;
 }
+
+export type PortfolioSingleResponse = EntitySingleResponse<"portfolio", Portfolio>;
+
+export type PortfolioListResponse = EntityListResponse<"portfolios", Portfolio>;
+
+export type DeletePortfolioResponse = DeleteEntityResponse<"portfolios">;
