@@ -100,6 +100,14 @@ def http_request(payload: dict, method: str, url: str) -> tuple:
     return (status_code, message, user_app)
 
 
+def increment_version(version: str) -> str:
+    """Increment a version string like 'v1' -> 'v2', 'v10' -> 'v11'."""
+    match = re.match(r'^v(\d+)$', version)
+    if not match:
+        return 'v1'
+    return f'v{int(match.group(1)) + 1}'
+
+
 ###############################################################################
 # Main
 ###############################################################################
@@ -135,10 +143,33 @@ def main():
 
     print(f'Config: {json.dumps({k: v for k, v in template.items() if k != "data"}, indent=2)}')
 
+    # Determine if this is an update or a new deploy
+    existing_id = template.get('id', '')
+    is_update = bool(existing_id)
+
+    if is_update:
+        print(f'Reusing existing app ID: {existing_id}')
+    else:
+        template.pop('id', None)
+        print('No existing app ID found — will create a new app.')
+
+    current_version = template.get('version', 'v1')
+    if is_update:
+        new_version = increment_version(current_version)
+        template['version'] = new_version
+        print(f'Version incremented: {current_version} -> {new_version}')
+    else:
+        template['version'] = current_version
+        print(f'First deploy — using version {current_version}')
+
     # Deploy
     base_url = get_base_url()
-    print(f'Deploying to {base_url} ...')
-    status_code, message, user_app = http_request(template, 'POST', base_url)
+    if is_update:
+        deploy_url = f'{base_url}/{existing_id}/partial'
+    else:
+        deploy_url = base_url
+    print(f'Deploying to {deploy_url} ...')
+    status_code, message, user_app = http_request(template, 'POST', deploy_url)
     print(f'HTTP {status_code}: {message}')
 
     if status_code != 200:
@@ -152,9 +183,11 @@ def main():
     print(f'App ID: {app_id}')
 
     # Update config.json with response fields
-    keys = ['target_users', 'created', 'updated']
+    keys = ['id', 'version', 'target_users', 'created', 'updated']
     update_config(config_path, user_app, keys)
     print('config.json updated successfully.')
+    print(f'  id: {user_app.get("id")}')
+    print(f'  version: {user_app.get("version")}')
     print(f'  target_users: {user_app.get("target_users", {})}')
     print(f'  created: {user_app.get("created")}')
     print(f'  updated: {user_app.get("updated")}')
