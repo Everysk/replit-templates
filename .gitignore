@@ -85,5 +85,7 @@ config.json
 *.swo
 *.docx
 .playwright-mcp
-.serena/
-output/codebase
+docs/
+!docs/architecture/
+
+.serena/project.yml
