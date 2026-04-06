@@ -1,7 +1,8 @@
+import type { Datastore } from "../types/datastore";
 import type { DefaultObject } from "../types/defaultObject";
 
 type Cell = string | number | null;
-type Datastore = Cell[][];
+type DatastoreData = Cell[][];
 
 /**
  * Converts a datastore table (2D array) into an array of objects.
@@ -39,7 +40,7 @@ type Datastore = Cell[][];
  * //   { datastoreId: "ds_123", name: "Bob", age: null }
  * // ]
  */
-export const datastoreToObject = <T extends Record<string, Cell>>(datastoreId: string, headers: string[], data: Datastore): T[] => {
+export const datastoreToObject = <T extends Record<string, Cell>>(datastoreId: string, headers: string[], data: DatastoreData): T[] => {
   const result: T[] = [];
 
   for (let i = 1; i < data?.length; i++) {
@@ -86,8 +87,8 @@ export const datastoreToObject = <T extends Record<string, Cell>>(datastoreId: s
  * //   ["Bob", null]
  * // ]
  */
-export const objectToDatastore = <T extends Record<string, Cell>>(headers: string[] ,data: T[]): Datastore => {
-  const rows: Datastore = data.map((d) => headers.map<Cell>((h) => d[h as string] ?? null));
+export const objectToDatastore = <T extends Record<string, Cell>>(headers: string[] ,data: T[]): DatastoreData => {
+  const rows: DatastoreData = data.map((d) => headers.map<Cell>((h) => d[h as string] ?? null));
 
   return [headers, ...rows];
 };
@@ -117,4 +118,43 @@ export const mergeDatastores = (datastores: DefaultObject[][]): DefaultObject[] 
   });
 
   return result;
+};
+
+/**
+ * mountDatastoreProps
+ *
+ * Extracts and maps the metadata properties of a `Datastore` into a plain object
+ * for UI usage, discarding raw data rows.
+ *
+ * - `header` is derived from `datastore.data?.[0]` (the first row of the data matrix),
+ *   which is expected to contain the column names. Falls back to `[]` if not present.
+ *
+ * @param {Datastore} datastore - The source datastore object.
+ * @returns Metadata object with the datastore's descriptive properties and header.
+ *
+ * @example
+ * const meta = mountDatastoreProps(datastore);
+ * // {
+ * //   name: "my-datastore",
+ * //   workspace: "ws-1",
+ * //   header: ["col1", "col2"],
+ * //   ...
+ * // }
+ */
+export const mountDatastoreProps = (datastore: Datastore) => {
+    return {
+        name: datastore.name,
+        date: datastore.date,
+        version: datastore.version,
+        description: datastore.description,
+        tags: datastore.tags,
+        link_uid: datastore.link_uid,
+        workspace: datastore.workspace,
+        date_time: datastore.date_time,
+        created: datastore.created,
+        updated: datastore.updated,
+        level: datastore.level,
+        storage: datastore.storage,
+        header: datastore.data?.[0] || [],
+    };
 };
