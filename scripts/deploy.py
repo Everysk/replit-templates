@@ -168,8 +168,9 @@ def main():
         deploy_url = f'{base_url}/{existing_id}/partial'
     else:
         deploy_url = base_url
+    http_method = 'PUT' if is_update else 'POST'
     print(f'Deploying to {deploy_url} ...')
-    status_code, message, user_app = http_request(template, 'POST', deploy_url)
+    status_code, message, user_app = http_request(template, http_method, deploy_url)
     print(f'HTTP {status_code}: {message}')
 
     if status_code != 200:
