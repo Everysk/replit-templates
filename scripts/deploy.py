@@ -133,11 +133,16 @@ def main():
     print('Packaging dist directory...')
     template = build_template(config_path, dist_path)
 
-    # Include app env settings
+    # Include app env settings (skip empty values)
     app_config_path = os.path.join(PROJECT_ROOT, 'dev', 'app-config.dev.json')
     if os.path.isfile(app_config_path):
-        template['env'] = read_file(app_config_path)
-        print(f'App env: {json.dumps(template["env"])}')
+        env_config = read_file(app_config_path)
+        env_config = {k: v for k, v in env_config.items() if v}
+        if env_config:
+            template['env'] = env_config
+            print(f'App env: {json.dumps(template["env"])}')
+        else:
+            print('App env: skipped (all values empty)')
     else:
         print(f'WARNING: app-config.dev.json not found at {app_config_path} — env not set')
 
