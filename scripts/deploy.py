@@ -170,7 +170,7 @@ def main():
     # Deploy
     base_url = get_base_url()
     if is_update:
-        deploy_url = f'{base_url}/{existing_id}/partial'
+        deploy_url = f'{base_url}/{existing_id}'
     else:
         deploy_url = base_url
     http_method = 'PUT' if is_update else 'POST'
