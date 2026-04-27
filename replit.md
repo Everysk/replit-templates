@@ -90,9 +90,11 @@ const message = await anthropic.messages.create({
 | **systematic-debugging** | `.agents/skills/systematic-debugging` | When debugging any error, test failure, or unexpected behavior. Root-cause tracing, test pressure analysis, condition-based waiting patterns, and defense-in-depth. |
 | **vercel-react-best-practices** | `.agents/skills/vercel-react-best-practices` | When reviewing or optimizing React component performance. 50+ rules covering rendering, re-renders, async boundaries, bundle optimization, and JS patterns. |
 | **browser-use** | `.agents/skills/browser-use` | When automating browser interactions — screenshots, form fills, navigation, UI testing within the agent. |
+| **everysk-utils** | `.agents/skills/everysk-utils` | **Before implementing any feature** that fetches or mutates Everysk entities (portfolios, datastores, files, workflows, workspaces), listens to or sends broadcast messages, uses app config or alerts, or wires providers. Contains all built-in hooks and providers — read it before writing any data or messaging code to avoid duplicating utilities that already exist. |
 
 **Mandatory Rules (apply to every conversation, including new sessions and fresh imports):**
 - Always load the **everysk-api** skill at the start of **every conversation without exception** — this template is an Everysk platform app and all work requires platform knowledge. Do NOT skip this step, even for simple questions. **You MUST also read ALL 7 reference files** in `.agents/skills/everysk-api/references/` (sdk-entities, sdk-engines, core, api-reference, server, worker-patterns, branding) — these are not optional progressive-disclosure files, they are mandatory context for every session.
+- Always load the **everysk-utils** skill before implementing any feature that reads/writes Everysk entities or handles messaging. **Never create custom fetch utilities, axios calls, or BroadcastChannel instances** — use the built-in hooks. If you create a `new BroadcastChannel(...)` directly, the broadcast communication will break. If you write a custom `axios.get("/portfolios")` instead of `useFetchPortfolios`, the data will bypass the cache and mutations won't invalidate correctly.
 - Always load the **brainstorming** skill before starting any creative or feature-building work. Do NOT skip this step.
 - Always load the **frontend-design** skill when building or modifying any UI component or page. **Follow the Everysk 2026 brand guidelines** from the everysk-api branding reference (colors: #F2703B orange, #C9DDE8 blue, #A49F8C gray; fonts: Playfair Display/Space Grotesk/DM Sans).
 - Always load the **agent-tools** skill when running AI model inference, image/video generation, or web search via CLI.
@@ -104,6 +106,18 @@ const message = await anthropic.messages.create({
 - Always load the **vercel-react-best-practices** skill before writing or reviewing React components to apply performance best practices.
 - Always load the **browser-use** skill when performing any browser automation or UI interaction tasks.
 
+
+---
+
+### Optional Components
+
+Some providers in `src/contexts/` require extra packages not included in the base template. Install them only when you need the feature.
+
+| Component | Path | Required Package | Install Command |
+|-----------|------|-----------------|-----------------|
+| `AgGridLicenseProvider` | `src/contexts/agGridLicenseContext/agGridLicenseProvider.tsx` | `ag-grid-enterprise` | `npm install ag-grid-enterprise` |
+
+If the required package is absent, the provider degrades gracefully: children render normally without the feature.
 
 ---
 
@@ -317,9 +331,11 @@ const workflows = query.data ?? [];
 - Returns `{ runAsync, runSync }`. Both accept `{ id, workspace, parameters }`.
 - `runSync` returns the execution result immediately (preferred when output is needed).
 - `runAsync` starts execution without waiting for result.
+- **Response shape:** resolves to `{ workflow_execution: { ... }, result: { log, status, data } }`. `workflow_execution` has execution metadata (id, status, duration, worker trace). `result.data` is the workflow-specific output defined by the Ender worker — its shape varies per workflow. Always read output from `response.result.data`, never from `response` or `response.result` directly.
 ```ts
 const { runSync, runAsync } = useWorkflowRunMutations();
-const result = await runSync.mutateAsync({ id: "wf-123", workspace: "ws-1", parameters: { UID: "ABC" } });
+const response = await runSync.mutateAsync({ id: "wf-123", workspace: "ws-1", parameters: { UID: "ABC" } });
+const output = response.result.data; // workflow return values — shape defined by each workflow
 runAsync.mutate({ id: "wf-123", workspace: "ws-1", parameters: {} });
 ```
 
@@ -393,6 +409,52 @@ const { query } = useFetchWorkerExecutions({
 });
 const workerExecutions = query.data ?? [];
 ```
+
+---
+
+### Contexts Reference
+
+#### Required Providers
+
+All required providers are wired in `src/App.tsx` in this nesting order (outermost first):
+`ThemeProviderWrapper` → `BroadcastChannelProvider` → `AppConfigProvider` → `QueryClientProvider` → `AppAlertProvider`
+
+**`ThemeProviderWrapper`** — `src/components/themeProviderWrapper/`
+- Applies the MUI theme. Must be outermost — all MUI components (including Alert) depend on it.
+
+**`BroadcastChannelProvider`** — `src/contexts/broadcastChannelContext/`
+- Provides cross-tab pub/sub via the browser `BroadcastChannel` API.
+- Exposes `{ post(message), subscribe(fn), lastMessage }` via `useBroadcastChannel()`.
+
+**`AppConfigProvider`** — `src/contexts/appConfigContext/`
+- Reads `window.APP_CONFIG` and merges `/app-config.dev.json` overrides (dev only).
+- Exposes `{ appId, appEnvironmentVar }` via `useAppConfig()`.
+
+**`AppAlertProvider`** — `src/contexts/appAlertContext/`
+- Global MUI Snackbar/Alert. Exposes `{ showAlert(options), hideAlert() }` via `useAppAlert()`.
+- Must be inside `QueryClientProvider` (mutation hooks that show alerts live here).
+
+---
+
+#### Optional Providers
+
+**`AgGridLicenseProvider`** — `src/contexts/agGridLicenseContext/agGridLicenseProvider.tsx`
+- **Requires `ag-grid-enterprise`** (not in base template). Install with `npm install ag-grid-enterprise` before using.
+- Manages the AG Grid Enterprise license. Must wrap any subtree that renders AG Grid Enterprise components.
+- Must be inside `BroadcastChannelProvider` (uses broadcast channel to request/receive the license).
+- Listens for `SEND_AG_GRID_LICENSE` broadcast message from the parent frame (Everysk shell) and calls `LicenseManager.setLicenseKey(license)`.
+- Sends `REQUEST_AG_GRID_LICENSE` on mount to trigger the shell to respond.
+- In **production**: renders `<GlobalLoading>` until the license is received.
+- In **development** (`import.meta.env.DEV`): skips the wait, renders children immediately.
+- If `ag-grid-enterprise` is not installed: dynamic import fails silently, children render normally.
+```tsx
+// Wrap only the AG Grid subtree, not the whole app
+<AgGridLicenseProvider>
+  <MyAgGridPage />
+</AgGridLicenseProvider>
+```
+
+---
 
 ### API Endpoints Used:
 - `GET /workspaces` — List all workspaces

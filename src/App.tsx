@@ -9,17 +9,17 @@ import { AppAlertProvider } from "./contexts/appAlertContext/appAlertProvider";
 
 function App() {
   return (
-    <BroadcastChannelProvider>
-      <AppConfigProvider>
-        <ThemeProviderWrapper>
+    <ThemeProviderWrapper>
+      <BroadcastChannelProvider>
+        <AppConfigProvider>
           <QueryClientProvider client={queryClient}>
             <AppAlertProvider>
               <Pages />
             </AppAlertProvider>
           </QueryClientProvider>
-        </ThemeProviderWrapper>
-      </AppConfigProvider>
-    </BroadcastChannelProvider>
+        </AppConfigProvider>
+      </BroadcastChannelProvider>
+    </ThemeProviderWrapper>
   );
 }
 
