@@ -236,6 +236,165 @@ const workspaces = query.data ?? [];
 
 ---
 
+## Filters, Order & Projection
+
+### FilterClause — the filter object
+
+All list hooks accept `filters: FilterClause[]`. Each clause has:
+
+```ts
+{ field: string; value: unknown; op?: "=" | ">" | ">=" | "<" | "<=" | "!=" }
+```
+
+`op` is optional — omitting it means equality (`=`).
+
+### Operators
+
+| op | Meaning | Example |
+|----|---------|---------|
+| *(omitted)* or `"="` | equals | `{ field: "workspace", value: "ws-1" }` |
+| `"!="` | not equals | `{ field: "status", op: "!=", value: "DELETED" }` |
+| `">"` | greater than | `{ field: "created", op: ">", value: 1700000000 }` |
+| `">="` | greater than or equal | `{ field: "date", op: ">=", value: "20260101" }` |
+| `"<"` | less than | `{ field: "created", op: "<", value: 1800000000 }` |
+| `"<="` | less than or equal | `{ field: "date", op: "<=", value: "20261231" }` |
+
+### Common fields
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `workspace` | `string` | **Always required** as the first filter in every list hook |
+| `name` | `string` | Exact name match |
+| `date` | `string` | Format `"YYYYMMDD"` (e.g. `"20260115"`) — supports range operators |
+| `link_uid` | `string` | Links the entity to a specific UID (e.g. a datastore linked to a portfolio) |
+| `tags` | `string` | Filter by tag value |
+
+### Examples
+
+```ts
+// workspace only (minimum required)
+const filters: FilterClause[] = [
+  { field: "workspace", value: "ws-1" },
+];
+
+// filter by name
+const filters: FilterClause[] = [
+  { field: "workspace", value: "ws-1" },
+  { field: "name", value: "My Portfolio" },
+];
+
+// filter by date range (format: "YYYYMMDD")
+const filters: FilterClause[] = [
+  { field: "workspace", value: "ws-1" },
+  { field: "date", op: ">=", value: "20260101" },
+  { field: "date", op: "<=", value: "20261231" },
+];
+
+// filter by link_uid (e.g. datastores linked to a specific portfolio)
+const filters: FilterClause[] = [
+  { field: "workspace", value: "ws-1" },
+  { field: "link_uid", value: "pf-abc123" },
+];
+
+// filter by tag
+const filters: FilterClause[] = [
+  { field: "workspace", value: "ws-1" },
+  { field: "tags", value: "risk" },
+];
+
+// combining multiple common fields
+const filters: FilterClause[] = [
+  { field: "workspace", value: "ws-1" },
+  { field: "link_uid", value: "pf-abc123" },
+  { field: "date", op: ">=", value: "20260101" },
+  { field: "date", op: "<=", value: "20261231" },
+];
+```
+
+### Filter values must come from app config — never hardcoded
+
+Values like `workspace`, `link_uid`, tag IDs, and other entity identifiers are **runtime configuration** — they differ between environments and deployments. Always store them in `dev/app-config.dev.json` and read them via `useAppConfig()`.
+
+**`dev/app-config.dev.json`** — add your config values here:
+```json
+{
+  "app": "my-everysk-app",
+  "workspace": "my-workspace",
+  "link_uid": "pf-abc123",
+  "tags": ["risk", "equity"]
+}
+```
+
+**Component** — read via `useAppConfig()` and pass to filters:
+```ts
+const { appEnvironmentVar } = useAppConfig();
+
+const workspace = appEnvironmentVar.workspace as string;
+const linkUid = appEnvironmentVar.link_uid as string;
+
+const filters: FilterClause[] = [
+  { field: "workspace", value: workspace },
+  { field: "link_uid", value: linkUid },
+];
+
+const { query } = useFetchDatastores({ filters });
+```
+
+```ts
+// ❌ Never hardcode — breaks when deployed to a different environment
+const filters = [
+  { field: "workspace", value: "my-workspace" },
+  { field: "link_uid", value: "pf-abc123" },
+];
+
+// ✅ Always read from appEnvironmentVar
+const { appEnvironmentVar } = useAppConfig();
+const filters = [
+  { field: "workspace", value: appEnvironmentVar.workspace as string },
+  { field: "link_uid", value: appEnvironmentVar.link_uid as string },
+];
+```
+
+In production, `window.APP_CONFIG` is injected by the Everysk server using the values from `dev/app-config.dev.json` sent during deploy — so the same code works in both environments without changes.
+
+---
+
+### Workspace filter is mandatory
+
+Every list hook (`useFetchPortfolios`, `useFetchDatastores`, `useFetchFiles`, `useFetchWorkflowExecutions`, `useFetchWorkerExecutions`) **requires** a `workspace` filter. Omitting it will return no results or cause an API error.
+
+```ts
+// ❌ Missing workspace — will not work
+const filters = [{ field: "status", value: "ACTIVE" }];
+
+// ✅ Always include workspace first
+const filters = [
+  { field: "workspace", value: "ws-1" },
+  { field: "status", value: "ACTIVE" },
+];
+```
+
+### order — sorting
+
+`order` is an array of strings in the format `"field direction"`:
+
+```ts
+order: ["created desc"]        // newest first
+order: ["name asc"]            // alphabetical
+order: ["date desc", "name asc"] // multiple sort fields
+```
+
+### projection — field exclusion
+
+`projection` is a single field name string that tells the API to **exclude** that field from the response. Use it to avoid fetching large fields you don't need (e.g. `data` on a datastore).
+
+```ts
+projection: "data"   // exclude the data field — useful when you only need metadata
+projection: ""       // omit — returns all fields (default)
+```
+
+---
+
 ## Pagination — Infinite Query Pattern
 
 All list hooks (`useFetchPortfolios`, `useFetchDatastores`, `useFetchFiles`, `useFetchWorkflows`, `useFetchWorkflowExecutions`, `useFetchWorkerExecutions`, `useFetchWorkspaces`) use `useInfiniteQuery`. Use `query.hasNextPage` and `query.fetchNextPage` to load more:
