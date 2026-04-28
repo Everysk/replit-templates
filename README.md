@@ -53,15 +53,29 @@ This README summarizes the project layout and how to use the React hooks, contex
 - `src/`
   - `App.tsx`, `main.tsx` — application entry and root component.
   - `components/`
-    - `themeProviderWrapper/` — theme wrapper available to the app.
-    - `ui/everyskIcon` — small UI pieces.
+    - `GlobalLoading/` — full-screen loading spinner.
+    - `themeProviderWrapper/` — MUI theme wrapper (overrides + themes).
+    - `ui/` — generic UI pieces (`everyskIcon/`, `WorkspaceCombobox/`).
   - `contexts/`
-    - `appConfigContext` — AppConfig provider + types.
-    - `appAlertContext` — AppAlert provider + types.
-    - `broadcastChannelContext` — Broadcast provider + helpers.
-  - `hooks/` — main integration surface (see “Hooks” section below).
-  - `pages/` — route pages (home, index).
-  - `utils/` — API clients, query client setup and helpers.
+    - `agGridLicenseContext/` — AG Grid Enterprise license via broadcast channel.
+    - `appAlertContext/` — global alert/snackbar provider + types.
+    - `appConfigContext/` — runtime app config (`window.APP_CONFIG`) provider + types.
+    - `broadcastChannelContext/` — cross-frame broadcast provider + helpers.
+  - `hooks/` — custom hooks, grouped by domain:
+    - `datastore/` — `useFetchDatastore`, `useFetchDatastores`, `useDatastoreMutations`
+    - `file/` — `useFetchFile`, `useFetchFiles`, `useFileMutations`
+    - `portfolio/` — `useFetchPortfolio`, `useFetchPortfolios`, `usePortfolioMutations`
+    - `workflow/` — `useFetchWorkflow`, `useFetchWorkflows`, `useRunWorkflowMutations`, `useFetchWorkflowExecution`, `useFetchWorkflowExecutions`, `useFetchWorkerExecution`, `useFetchWorkerExecutions`
+    - `workspaces/` — `useFetchWorkspace`, `useFetchWorkspaces`
+    - `useAxios/` — memoized Axios instance with workspace interceptor
+    - `useBroadcastSubscription/` — subscribe/unsubscribe lifecycle wrapper
+    - `useAppAlert.tsx`, `useAppConfig.tsx`, `useBroadcastChannel.tsx` — flat hooks
+  - `pages/` — route pages (`home/`, router entry in `index.tsx`).
+  - `types/` — TypeScript type definitions (one file per entity).
+  - `utils/` — utility functions and helpers:
+    - `api/` — raw Axios call functions, grouped by entity (`datastore/`, `entityQuery/`, `file/`, `portfolio/`, `workflow/`, `workspace/`)
+    - `datastore/` — serialization helpers (`datastoreToObject`, `objectToDatastore`, `mergeDatastores`, `mountDatastoreProps`)
+    - `queryClient/` — TanStack Query client factory and default `queryFn`
 - `dev/`
   - `app-config.dev.json` — development app config served by a Vite plugin.
 - `vite/`
@@ -449,7 +463,7 @@ Returns a memoized Axios client already configured to call the Everysk API.
 
 **Usage**
 ```ts
-import { useAxios } from “./hooks/useAxios”;
+import useAxios from “@src/hooks/useAxios”;
 
 const MyComponent = () => {
   const { api } = useAxios();

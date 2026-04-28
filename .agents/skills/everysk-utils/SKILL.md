@@ -56,7 +56,7 @@ post({ type: "MY_EVENT", payload: { ... } });
 ```
 
 `useBroadcastChannel()` — `src/hooks/useBroadcastChannel.tsx` — requires `<BroadcastChannelProvider>` ancestor.
-`useBroadcastSubscription(handler)` — `src/hooks/useBroadcastSubscription.tsx` — higher-level: handles subscribe/unsubscribe lifecycle automatically.
+`useBroadcastSubscription(handler)` — `src/hooks/useBroadcastSubscription/index.tsx` — higher-level: handles subscribe/unsubscribe lifecycle automatically.
 
 ---
 
@@ -238,6 +238,19 @@ const workspaces = query.data ?? [];
 
 ## Filters, Order & Projection
 
+### Always-fresh single-fetch hooks
+
+`useFetchPortfolio`, `useFetchWorkspace`, `useFetchWorkflowExecution`, and `useFetchWorkerExecution` ship with TanStack Query defaults of `refetchOnMount: "always"`, `staleTime: 0`, `gcTime: 0`. They re-fetch on every mount and never cache between unmounts. Override via `queryOptions` only if you have a concrete reason — caching these values can mask staleness in execution status / workspace metadata.
+
+### API endpoint constraints (gateway-enforced)
+
+These are easy to get wrong if you bypass the hooks and hit `/api` yourself:
+
+- `GET /workflows?workspace=<name>` — `workspace` is a **direct** query-string param, not a JSON `query` filter. `useFetchWorkflows` already handles this; raw axios calls must mirror it.
+- A standalone `GET /workflow_executions` endpoint **does not exist**. Executions are always nested under a workflow: `GET /workflows/{workflow_id}/workflow_executions[/{execution_id}]`.
+- Worker executions are nested two levels deep: `GET /workflows/{workflow_id}/workflow_executions/{execution_id}/worker_executions[/{worker_execution_id}]`.
+- All list endpoints require a `workspace` filter (or, for workflows, the direct query param above) — omitting it returns nothing or errors at the gateway.
+
 ### FilterClause — the filter object
 
 All list hooks accept `filters: FilterClause[]`. Each clause has:
@@ -413,25 +426,29 @@ query.fetchNextPage();
 
 ## Utility Hooks
 
-**`useAxios()`** — `src/hooks/useAxios.tsx`
+**`useAxios(url?: string | null)`** — `src/hooks/useAxios/index.tsx`
 Returns `{ api }`: memoized Axios instance with `baseURL=/api`. Do not create your own Axios instance.
+- Optional `url` is reserved for advanced overrides — leave it unset and call `api.get("/portfolios")` etc. with relative paths.
+- Request interceptor for GET/DELETE: extracts `workspace` from `params.query` (JSON string) and injects it as `params.workspace`.
 ```ts
 const { api } = useAxios();
 api.get("/some-endpoint").then(res => console.log(res.data));
 ```
 
 **`useAppAlert()`** — `src/hooks/useAppAlert.tsx`
-Returns `{ showAlert(options), hideAlert() }`. Use for success/error feedback — do not use `alert()` or custom toast libraries.
+Returns `{ showAlert(options), hideAlert() }`. Use for success/error feedback — do not use `alert()` or custom toast libraries. **Throws** if used outside `<AppAlertProvider>`.
 ```ts
 const { showAlert } = useAppAlert();
 showAlert({ message: "Saved.", severity: "success", autoHideDuration: 3000 });
 ```
 
 **`useAppConfig()`** — `src/hooks/useAppConfig.tsx`
-Returns `{ appId, appEnvironmentVar }`. Use to read runtime config — do not read `window.APP_CONFIG` directly.
+Returns `{ appId, appEnvironmentVar }`. Use to read runtime config — do not read `window.APP_CONFIG` directly. **Throws** if used outside `<AppConfigProvider>`.
 ```ts
 const { appId, appEnvironmentVar } = useAppConfig();
 ```
+
+Both `useBroadcastChannel()` and `useBroadcastSubscription()` **throw** if used outside `<BroadcastChannelProvider>` (the subscription hook delegates to `useBroadcastChannel` internally).
 
 ---
 
@@ -507,6 +524,12 @@ Do not invent message types that the shell does not send. Known shell → app me
 > Requires `npm install ag-grid-enterprise` before use.
 
 Manages the AG Grid Enterprise license via broadcast channel. Wrap only the subtree that uses AG Grid Enterprise.
+
+- Sends `REQUEST_AG_GRID_LICENSE` on mount; listens for `SEND_AG_GRID_LICENSE` from the Everysk shell and calls `LicenseManager.setLicenseKey(license)`.
+- **Production:** renders `<GlobalLoading>` until the license arrives.
+- **Development** (`import.meta.env.DEV`): renders children immediately.
+- If `ag-grid-enterprise` is not installed: dynamic import fails silently and children render normally.
+- Must be inside `<BroadcastChannelProvider>`.
 
 ```tsx
 // Install first: npm install ag-grid-enterprise

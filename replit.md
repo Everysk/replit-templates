@@ -1,5 +1,53 @@
 # App Template (Everysk)
 
+## ⛔ STOP — MANDATORY BEFORE ANY CODE CHANGE
+
+**Before editing or creating ANY `.ts` / `.tsx` file:**
+
+1. Read `.agents/skills/tdd/SKILL.md` and follow it.
+2. Write the failing test (`*.test.tsx`) co-located with the source — RED first.
+3. Run `npm test` and confirm the test fails for the right reason.
+4. Only then implement until GREEN.
+5. Run `npm run lint` — must be clean before closing the task.
+
+No exceptions, no matter how small the change. If you're about to type code into a `.ts` / `.tsx` file without a failing test in place, stop and write the test first.
+
+## Required Agent Skills (MANDATORY — Every Conversation)
+
+**IMPORTANT:** The following agent skills **must** be loaded and used in every conversation, every new session, and on every fresh app import. These skills are installed in `.agents/skills/` and persist across all copies of this template. The agent must read and follow the relevant SKILL.md file before performing any work that matches the "When to Use" criteria.
+
+| Skill | Path | When to Use |
+|-------|------|-------------|
+| **tdd** | `.agents/skills/tdd` | **Before writing or modifying any `.ts` or `.tsx` file.** Enforces Red→Green→Refactor cycle, co-located test file convention, and deploy gate (`npm test` must pass). |
+| **everysk-api** | `.agents/skills/everysk-api` | **Every conversation, every prompt, every session.** Comprehensive Everysk platform reference — REST API v2, Python SDK entities (Portfolio, Datastore, Report, File, CustomIndex, PrivateSecurity), 6 engines (MarketData, UserCache, Compliance, ExpressionEngine, UserLock, Cryptography), 13 core modules, WorkerBase patterns, 7 calculation endpoints, server/deployment, and 2026 brand identity (colors, typography, voice). **MANDATORY: Load SKILL.md AND read ALL 7 reference files** (7,690 total lines) on every invocation. All apps built from this template run on Everysk. |
+| **everysk-utils** | `.agents/skills/everysk-utils` | **Before implementing any feature** that fetches or mutates Everysk entities (portfolios, datastores, files, workflows, workspaces), listens to or sends broadcast messages, uses app config or alerts, or wires providers. Contains all built-in hooks and providers — read it before writing any data or messaging code to avoid duplicating utilities that already exist. |
+| **brainstorming** | `.agents/skills/brainstorming` | **Before any creative work** — creating features, building components, adding functionality, or modifying behavior. Always explore user intent, requirements, and design before implementation. |
+| **frontend-design** | `.agents/skills/frontend-design` | When building or styling any UI — web components, pages, dashboards, layouts. Produces polished, production-grade interfaces. **Must follow Everysk brand guidelines** from everysk-api branding reference. |
+| **ui-ux-pro-max** | `.agents/skills/ui-ux-pro-max` | When building or styling any React UI — comprehensive design system data (colors, typography, icons, charts, component patterns). Use alongside `frontend-design` and the Everysk branding reference. |
+| **systematic-debugging** | `.agents/skills/systematic-debugging` | When debugging any error, test failure, or unexpected behavior. Root-cause tracing, test pressure analysis, condition-based waiting patterns, and defense-in-depth. |
+| **vercel-react-best-practices** | `.agents/skills/vercel-react-best-practices` | When reviewing or optimizing React component performance. 50+ rules covering rendering, re-renders, async boundaries, bundle optimization, and JS patterns. |
+| **agent-tools** | `.agents/skills/agent-tools` | When running AI apps via inference.sh CLI — image generation, video creation, LLMs, search, 3D, Twitter automation (FLUX, Veo, Gemini, Grok, Claude, etc.). |
+| **pdf** | `.agents/skills/pdf` | When doing anything with PDF files — reading, merging, splitting, creating, filling forms, OCR, watermarks, encryption. |
+| **browser-use** | `.agents/skills/browser-use` | When automating browser interactions — screenshots, form fills, navigation, UI testing within the agent. |
+| **find-skills** | `.agents/skills/find-skills` | When the user asks "how do I do X" or looks for functionality that might exist as an installable skill. |
+
+**Mandatory Rules (apply to every conversation, including new sessions and fresh imports):**
+- Always load the **tdd** skill before writing or modifying **any** `.ts` or `.tsx` file. Write the failing test first, confirm RED, implement, confirm GREEN. Run `npm test` before any deploy.
+- Always load the **everysk-api** skill at the start of **every conversation without exception** — this template is an Everysk platform app and all work requires platform knowledge. Do NOT skip this step, even for simple questions. **You MUST also read ALL 7 reference files** in `.agents/skills/everysk-api/references/` (sdk-entities, sdk-engines, core, api-reference, server, worker-patterns, branding) — these are not optional progressive-disclosure files, they are mandatory context for every session.
+- Always load the **everysk-utils** skill before implementing any feature that reads/writes Everysk entities or handles messaging. **Never create custom fetch utilities, axios calls, or BroadcastChannel instances** — use the built-in hooks. If you create a `new BroadcastChannel(...)` directly, the broadcast communication will break. If you write a custom `axios.get("/portfolios")` instead of `useFetchPortfolios`, the data will bypass the cache and mutations won't invalidate correctly.
+- Always load the **brainstorming** skill before starting any creative or feature-building work. Do NOT skip this step.
+- Always load the **frontend-design** skill when building or modifying any UI component or page. **Follow the Everysk 2026 brand guidelines** from the everysk-api branding reference (colors: #F2703B orange, #C9DDE8 blue, #A49F8C gray; fonts: Playfair Display/Space Grotesk/DM Sans).
+- Always load the **ui-ux-pro-max** skill when building or modifying React UI components, alongside **frontend-design** and the Everysk branding reference from `everysk-api`.
+- Always load the **systematic-debugging** skill when encountering any error, bug, or unexpected behavior — before attempting a fix.
+- Always load the **vercel-react-best-practices** skill before writing or reviewing React components to apply performance best practices.
+- Always load the **agent-tools** skill when running AI model inference, image/video generation, or web search via CLI.
+- Always load the **pdf** skill when the user mentions `.pdf` files or asks to produce/manipulate PDFs.
+- Always load the **browser-use** skill when performing any browser automation or UI interaction tasks.
+- Always load the **find-skills** skill when the user asks about discovering new capabilities or extending functionality.
+- These rules apply to **every conversation** — not just the first one. On every new conversation or fresh import, re-read this section and follow the skill requirements.
+
+---
+
 ## Overview
 A React + TypeScript + Vite frontend application template. Uses MUI, Tailwind CSS, TanStack Query, and wouter for routing. Designed as a template for building Everysk platform applications.
 
@@ -74,42 +122,7 @@ const message = await anthropic.messages.create({
 - **Never modify the `.replit` file or its workflows.** The `Project`, `Start application`, and `Deploy App` workflows are pre-configured and must not be changed. Port `5000` is required and hardcoded in `.replit`. Modifying `.replit` will break Replit's Run button and the Deploy workflow for every user who imports this template.
 - **Never run the "Deploy App" workflow automatically.** The `Deploy App` workflow runs `scripts/replit-deploy.sh` which deploys to **production**. It must ONLY be triggered when the user explicitly clicks "Deploy App" in the Replit Workflows tab. Do not run it on repo import, during initial setup, on first run, or as part of any automated or initialization step. The only workflow that should run on import or startup is **"Project"** (which starts the dev server).
 
-### Required Agent Skills (MANDATORY — Every Conversation)
-
-**IMPORTANT:** The following agent skills **must** be loaded and used in every conversation, every new session, and on every fresh app import. These skills are installed in `.agents/skills/` and persist across all copies of this template. The agent must read and follow the relevant SKILL.md file before performing any work that matches the "When to Use" criteria.
-
-| Skill | Path | When to Use |
-|-------|------|-------------|
-| **everysk-api** | `.agents/skills/everysk-api` | **Every conversation, every prompt, every session.** Comprehensive Everysk platform reference — REST API v2, Python SDK entities (Portfolio, Datastore, Report, File, CustomIndex, PrivateSecurity), 6 engines (MarketData, UserCache, Compliance, ExpressionEngine, UserLock, Cryptography), 13 core modules, WorkerBase patterns, 7 calculation endpoints, server/deployment, and 2026 brand identity (colors, typography, voice). **MANDATORY: Load SKILL.md AND read ALL 7 reference files** (7,690 total lines) on every invocation. All apps built from this template run on Everysk. |
-| **brainstorming** | `.agents/skills/brainstorming` | **Before any creative work** — creating features, building components, adding functionality, or modifying behavior. Always explore user intent, requirements, and design before implementation. |
-| **frontend-design** | `.agents/skills/frontend-design` | When building or styling any UI — web components, pages, dashboards, layouts. Produces polished, production-grade interfaces. **Must follow Everysk brand guidelines** from everysk-api branding reference. |
-| **agent-tools** | `.agents/skills/agent-tools` | When running AI apps via inference.sh CLI — image generation, video creation, LLMs, search, 3D, Twitter automation (FLUX, Veo, Gemini, Grok, Claude, etc.). |
-| **pdf** | `.agents/skills/pdf` | When doing anything with PDF files — reading, merging, splitting, creating, filling forms, OCR, watermarks, encryption. |
-| **find-skills** | `.agents/skills/find-skills` | When the user asks "how do I do X" or looks for functionality that might exist as an installable skill. |
-| **ui-ux-pro-max** | `.agents/skills/ui-ux-pro-max` | When building or styling any React UI — comprehensive design system data (colors, typography, icons, charts, component patterns). Use alongside `frontend-design` and the Everysk branding reference. |
-| **systematic-debugging** | `.agents/skills/systematic-debugging` | When debugging any error, test failure, or unexpected behavior. Root-cause tracing, test pressure analysis, condition-based waiting patterns, and defense-in-depth. |
-| **vercel-react-best-practices** | `.agents/skills/vercel-react-best-practices` | When reviewing or optimizing React component performance. 50+ rules covering rendering, re-renders, async boundaries, bundle optimization, and JS patterns. |
-| **browser-use** | `.agents/skills/browser-use` | When automating browser interactions — screenshots, form fills, navigation, UI testing within the agent. |
-| **everysk-utils** | `.agents/skills/everysk-utils` | **Before implementing any feature** that fetches or mutates Everysk entities (portfolios, datastores, files, workflows, workspaces), listens to or sends broadcast messages, uses app config or alerts, or wires providers. Contains all built-in hooks and providers — read it before writing any data or messaging code to avoid duplicating utilities that already exist. |
-| **tdd** | `.agents/skills/tdd` | **Before writing or modifying any `.ts` or `.tsx` file.** Enforces Red→Green→Refactor cycle, co-located test file convention, and deploy gate (`npm test` must pass). |
-
-**Mandatory Rules (apply to every conversation, including new sessions and fresh imports):**
-- Always load the **everysk-api** skill at the start of **every conversation without exception** — this template is an Everysk platform app and all work requires platform knowledge. Do NOT skip this step, even for simple questions. **You MUST also read ALL 7 reference files** in `.agents/skills/everysk-api/references/` (sdk-entities, sdk-engines, core, api-reference, server, worker-patterns, branding) — these are not optional progressive-disclosure files, they are mandatory context for every session.
-- Always load the **everysk-utils** skill before implementing any feature that reads/writes Everysk entities or handles messaging. **Never create custom fetch utilities, axios calls, or BroadcastChannel instances** — use the built-in hooks. If you create a `new BroadcastChannel(...)` directly, the broadcast communication will break. If you write a custom `axios.get("/portfolios")` instead of `useFetchPortfolios`, the data will bypass the cache and mutations won't invalidate correctly.
-- Always load the **brainstorming** skill before starting any creative or feature-building work. Do NOT skip this step.
-- Always load the **frontend-design** skill when building or modifying any UI component or page. **Follow the Everysk 2026 brand guidelines** from the everysk-api branding reference (colors: #F2703B orange, #C9DDE8 blue, #A49F8C gray; fonts: Playfair Display/Space Grotesk/DM Sans).
-- Always load the **agent-tools** skill when running AI model inference, image/video generation, or web search via CLI.
-- Always load the **pdf** skill when the user mentions `.pdf` files or asks to produce/manipulate PDFs.
-- Always load the **find-skills** skill when the user asks about discovering new capabilities or extending functionality.
-- These rules apply to **every conversation** — not just the first one. On every new conversation or fresh import, re-read this section and follow the skill requirements.
-- Always load the **ui-ux-pro-max** skill when building or modifying React UI components, alongside **frontend-design** and the Everysk branding reference from `everysk-api`.
-- Always load the **systematic-debugging** skill when encountering any error, bug, or unexpected behavior — before attempting a fix.
-- Always load the **vercel-react-best-practices** skill before writing or reviewing React components to apply performance best practices.
-- Always load the **browser-use** skill when performing any browser automation or UI interaction tasks.
-- Always load the **tdd** skill before writing or modifying **any** `.ts` or `.tsx` file. Write the failing test first, confirm RED, implement, confirm GREEN. Run `npm test` before any deploy.
-
-
----
+> The mandatory agent skills list lives at the top of this file under "Required Agent Skills".
 
 ### Optional Components
 
@@ -123,355 +136,12 @@ If the required package is absent, the provider degrades gracefully: children re
 
 ---
 
-### Hooks Reference
+### Hooks, Contexts & API — see the `everysk-utils` skill
 
-**Utility**
-- `src/hooks/useAxios.tsx`
-- `src/hooks/useAppAlert.tsx`
-- `src/hooks/useAppConfig.tsx`
-- `src/hooks/useBroadcastChannel.tsx`
-- `src/hooks/useBroadcastSubscription.tsx`
+All hooks (`useFetchPortfolios`, `usePortfolioMutations`, `useFetchDatastores`, `useDatastoreMutations`, `useFetchFiles`, `useFileMutations`, `useFetchWorkflows`, `useWorkflowRunMutations`, `useFetchWorkflowExecution(s)`, `useFetchWorkerExecution(s)`, `useFetchWorkspace(s)`, `useAxios`, `useAppAlert`, `useAppConfig`, `useBroadcastChannel`, `useBroadcastSubscription`), context providers (required nesting order, `AgGridLicenseProvider`), filter/order/projection/pagination patterns, broadcast message format, and the underlying `/api/...` endpoints (portfolios, datastores, workflows, workflow_executions, worker_executions, workspaces) are documented in **`.agents/skills/everysk-utils/SKILL.md`**. Read that skill before writing or modifying any code that talks to Everysk entities, broadcasts, alerts, or runtime config — and never bypass it with raw `axios`, `fetch`, `new BroadcastChannel(...)`, `alert()`, or direct `window.APP_CONFIG` access.
 
-**Portfolio**
-- `src/hooks/portfolio/useFetchPortfolio.tsx`
-- `src/hooks/portfolio/useFetchPortfolios.tsx`
-- `src/hooks/portfolio/usePortfolioMutations.tsx`
-
-**Datastore**
-- `src/hooks/datastore/useFetchDatastore.tsx`
-- `src/hooks/datastore/useFetchDatastores.tsx`
-- `src/hooks/datastore/useDatastoreMutations.tsx`
-
-**File**
-- `src/hooks/file/useFetchFile.tsx`
-- `src/hooks/file/useFetchFiles.tsx`
-- `src/hooks/file/useFileMutations.tsx`
-
-**Workflow**
-- `src/hooks/workflow/useFetchWorkflow.tsx`
-- `src/hooks/workflow/useFetchWorkflows.tsx`
-- `src/hooks/workflow/useRunWorkflowMutations.tsx`
-- `src/hooks/workflow/useFetchWorkflowExecution.tsx`
-- `src/hooks/workflow/useFetchWorkflowExecutions.tsx`
-- `src/hooks/workflow/useFetchWorkerExecution.tsx`
-- `src/hooks/workflow/useFetchWorkerExecutions.tsx`
-
-**Workspace**
-- `src/hooks/workspaces/useFetchWorkspace.tsx`
-- `src/hooks/workspaces/useFetchWorkspaces.tsx`
-
----
-
-#### Utility Hooks
-
-**`useAxios(url?: string | null)`** — `src/hooks/useAxios.tsx`
-- Returns `{ api }`: memoized Axios instance with `baseURL=/api`.
-- Request interceptor for GET/DELETE: extracts `workspace` from `params.query` (JSON string) and injects it as `params.workspace`.
-- Use `/api` — no custom URL needed. In dev, Vite proxies it; in prod, the gateway resolves it.
-```ts
-const { api } = useAxios();
-api.get("/portfolios").then(res => console.log(res.data));
-```
-
-**`useAppAlert()`** — `src/hooks/useAppAlert.tsx`
-- Returns `{ showAlert(options), hideAlert() }` from `AppAlertContext`.
-- Throws if used outside `<AppAlertProvider>`.
-```ts
-const { showAlert } = useAppAlert();
-showAlert({ message: "Saved.", severity: "success", autoHideDuration: 3000 });
-```
-
-**`useAppConfig()`** — `src/hooks/useAppConfig.tsx`
-- Returns `{ appId, appEnvironmentVar }` from `AppConfigContext`.
-- Throws if used outside `<AppConfigProvider>`.
-```ts
-const { appId, appEnvironmentVar } = useAppConfig();
-```
-
-**`useBroadcastChannel()`** — `src/hooks/useBroadcastChannel.tsx`
-- Returns `{ post(message), subscribe(fn), lastMessage }` from `BroadcastChannelContext`.
-- Throws if used outside `<BroadcastChannelProvider>`.
-```ts
-const { subscribe, post } = useBroadcastChannel();
-useEffect(() => {
-  const unsub = subscribe((msg) => console.log(msg));
-  return unsub;
-}, [subscribe]);
-post({ type: "PING", payload: { at: Date.now() } });
-```
-
-**`useBroadcastSubscription(handler)`** — `src/hooks/useBroadcastSubscription.tsx`
-- Higher-level: subscribes on mount, unsubscribes on unmount. Uses a ref-backed handler to avoid re-subscriptions on re-renders.
-```ts
-useBroadcastSubscription((msg) => {
-  if (msg.type === "PING") console.log("ping:", msg.payload);
-});
-```
-
----
-
-#### Portfolio Hooks
-
-**`useFetchPortfolio({ id, workspace, queryOptions? })`** — `src/hooks/portfolio/useFetchPortfolio.tsx`
-- Fetches a single `Portfolio` by ID. Uses `useQuery`. Default options: `refetchOnMount: "always"`, `staleTime: 0`, `gcTime: 0`.
-- Returns `{ ...query, queryKey }`. Pass `queryKey` to `usePortfolioMutations` for cache invalidation.
-```ts
-const { data, isLoading, queryKey } = useFetchPortfolio({ id: "pf-123", workspace: "ws-1" });
-// data -> Portfolio
-```
-
-**`useFetchPortfolios({ filters?, order?, projection?, pageSize?, queryOptions? })`** — `src/hooks/portfolio/useFetchPortfolios.tsx`
-- Infinite/paginated list of portfolios. Uses `useInfiniteQuery`. Flattens all pages into a flat `Portfolio[]` via `select`.
-- Returns `{ query, queryKey }`. `query.data` is `Portfolio[]`.
-```ts
-const { query } = useFetchPortfolios({
-  filters: [{ field: "workspace", value: "ws-1" }],
-  pageSize: 20,
-});
-const portfolios = query.data ?? [];
-```
-
-**`usePortfolioMutations({ queryKey? })`** — `src/hooks/portfolio/usePortfolioMutations.tsx`
-- Returns `{ create, update, remove }` TanStack mutation results.
-- Shows success/error alerts via `useAppAlert`. Invalidates `queryKey` on success if provided.
-- `remove` requires `{ id, workspace }`.
-```ts
-const { create, update, remove } = usePortfolioMutations({ queryKey });
-create.mutate({ data: { name: "My Portfolio", base_currency: "USD", date: "2026-01-08", workspace: "ws-1", securities: [] } });
-update.mutate({ id: "pf-123", data: { name: "Renamed" } });
-remove.mutate({ id: "pf-123", workspace: "ws-1" });
-```
-
----
-
-#### Datastore Hooks
-
-**`useFetchDatastore({ id, workspace, queryOptions? })`** — `src/hooks/datastore/useFetchDatastore.tsx`
-- Fetches a single datastore by ID. Returns `DatastoreWithRows`: full `Datastore` shape with `data` as `DefaultObject[]` (rows transformed via `datastoreToObject`).
-- Returns `{ ...query, queryKey }`.
-```ts
-const { data, isLoading, queryKey } = useFetchDatastore({ id: "ds-123", workspace: "ws-1" });
-// data -> DatastoreWithRows
-// data.data -> [{ datastoreId: "ds-123", col1: "value", ... }]
-```
-
-**`useFetchDatastores({ filters?, order?, projection?, pageSize?, queryOptions? })`** — `src/hooks/datastore/useFetchDatastores.tsx`
-- Infinite/paginated list of datastores with cursor-based pagination. `query.data` is a flat `DatastoreWithRows[]`.
-- Returns `{ query, queryKey }`.
-```ts
-const { query } = useFetchDatastores({
-  filters: [{ field: "workspace", value: "ws-1" }],
-  pageSize: 20,
-});
-const datastores = query.data ?? [];
-```
-
-**`useDatastoreMutations({ queryKey? })`** — `src/hooks/datastore/useDatastoreMutations.tsx`
-- Returns `{ create, update, remove }`. Shows alerts. Invalidates `queryKey` on success.
-- `remove` requires `{ id, workspace }`.
-- `create`/`update` accept `data.data` as `[["col1", "col2"], ["val1", "val2"], ...]` (header row + data rows).
-```ts
-const { create, update, remove } = useDatastoreMutations({ queryKey });
-create.mutate({ data: { name: "My DS", workspace: "ws-1", data: [["id", "name"], ["001", "Alice"]] } });
-update.mutate({ id: "ds-123", data: { name: "Renamed", data: [["id", "name"], ["001", "Alice"]] } });
-remove.mutate({ id: "ds-123", workspace: "ws-1" });
-```
-
----
-
-#### File Hooks
-
-**`useFetchFile({ id, workspace, queryOptions? })`** — `src/hooks/file/useFetchFile.tsx`
-- Fetches a single `File` by ID. `File.data` is Base64-encoded content when present.
-- Returns `{ ...query, queryKey }`.
-```ts
-const { data, isLoading, queryKey } = useFetchFile({ id: "file-123", workspace: "ws-1" });
-// data -> File (data.data is Base64 string)
-```
-
-**`useFetchFiles({ filters?, order?, projection?, pageSize?, queryOptions? })`** — `src/hooks/file/useFetchFiles.tsx`
-- Infinite/paginated list of files. `query.data` is a flat `File[]`.
-- Returns `{ query, queryKey }`.
-```ts
-const { query } = useFetchFiles({
-  filters: [{ field: "workspace", value: "ws-1" }],
-  pageSize: 20,
-});
-const files = query.data ?? [];
-```
-
-**`useFileMutations({ queryKey? })`** — `src/hooks/file/useFileMutations.tsx`
-- Returns `{ create, update, remove }`. Shows alerts. Invalidates `queryKey` on success.
-- File content must be raw Base64 (no `data:<mime>;base64,` prefix). `remove` requires `{ id, workspace }`.
-```ts
-const { create } = useFileMutations({ queryKey });
-await create.mutateAsync({
-  data: { name: "report.txt", workspace: "ws-1", content_type: "text/plain", version: "1", link_uid: null, data: "SGVsbG8=" }
-});
-```
-
----
-
-#### Workflow Hooks
-
-**`useFetchWorkflow({ id, workspace, queryOptions? })`** — `src/hooks/workflow/useFetchWorkflow.tsx`
-- Fetches a single `Workflow` by ID. Returns `{ ...query, queryKey }`.
-```ts
-const { data } = useFetchWorkflow({ id: "wf-123", workspace: "ws-1" });
-// data -> Workflow
-```
-
-**`useFetchWorkflows({ workspace?, pageSize?, queryOptions? })`** — `src/hooks/workflow/useFetchWorkflows.tsx`
-- Infinite/paginated list of workflows. `workspace` is passed as a direct query param (not inside a filter). `query.data` is a flat `Workflow[]`.
-- Returns `{ query, queryKey }`.
-```ts
-const { query } = useFetchWorkflows({ workspace: "ws-1", pageSize: 20 });
-const workflows = query.data ?? [];
-```
-
-**`useWorkflowRunMutations()`** — `src/hooks/workflow/useRunWorkflowMutations.tsx`
-- Returns `{ runAsync, runSync }`. Both accept `{ id, workspace, parameters }`.
-- `runSync` returns the execution result immediately (preferred when output is needed).
-- `runAsync` starts execution without waiting for result.
-- **Response shape:** resolves to `{ workflow_execution: { ... }, result: { log, status, data } }`. `workflow_execution` has execution metadata (id, status, duration, worker trace). `result.data` is the workflow-specific output defined by the Ender worker — its shape varies per workflow. Always read output from `response.result.data`, never from `response` or `response.result` directly.
-```ts
-const { runSync, runAsync } = useWorkflowRunMutations();
-const response = await runSync.mutateAsync({ id: "wf-123", workspace: "ws-1", parameters: { UID: "ABC" } });
-const output = response.result.data; // workflow return values — shape defined by each workflow
-runAsync.mutate({ id: "wf-123", workspace: "ws-1", parameters: {} });
-```
-
----
-
-#### Workspace Hooks
-
-**`useFetchWorkspace({ name, queryOptions? })`** — `src/hooks/workspaces/useFetchWorkspace.tsx`
-- Fetches a single `Workspace` by name. Default options: `refetchOnMount: "always"`, `staleTime: 0`, `gcTime: 0`.
-- Returns `{ ...query, queryKey }`.
-```ts
-const { data, isLoading } = useFetchWorkspace({ name: "main" });
-// data -> Workspace
-```
-
-**`useFetchWorkspaces({ workspace?, pageSize?, queryOptions? })`** — `src/hooks/workspaces/useFetchWorkspaces.tsx`
-- Infinite/paginated list of workspaces with cursor-based pagination. Flattens all pages into a flat `Workspace[]` via `select`.
-- Returns `{ query, queryKey }`. `query.data` is `Workspace[]`.
-```ts
-const { query } = useFetchWorkspaces({ workspace: "main", pageSize: 20 });
-const workspaces = query.data ?? [];
-```
-
-#### Workflow Execution Hooks
-
-**`useFetchWorkflowExecution({ workflowId, workflowExecutionId, workspace, queryOptions? })`** — `src/hooks/workflow/useFetchWorkflowExecution.tsx`
-- Fetches a single `WorkflowExecution` by ID. Default options: `refetchOnMount: "always"`, `staleTime: 0`, `gcTime: 0`.
-- Returns `{ ...query, queryKey }`.
-```ts
-const { data, isLoading } = useFetchWorkflowExecution({
-  workflowId: "wf-123",
-  workflowExecutionId: "exec-456",
-  workspace: "main",
-});
-// data -> WorkflowExecution
-```
-
-**`useFetchWorkflowExecutions({ workflowId, filters?, order?, projection?, pageSize?, queryOptions? })`** — `src/hooks/workflow/useFetchWorkflowExecutions.tsx`
-- Infinite/paginated list of executions for a single workflow. `query.data` is a flat `WorkflowExecution[]`.
-- `filters` must include a `workspace` filter. Returns `{ query, queryKey }`.
-```ts
-const { query } = useFetchWorkflowExecutions({
-  workflowId: "wf-123",
-  filters: [{ field: "workspace", value: "main" }],
-  pageSize: 20,
-});
-const executions = query.data ?? [];
-```
-
-**`useFetchWorkerExecution({ workflowId, workerExecutionId, workspace, queryOptions? })`** — `src/hooks/workflow/useFetchWorkerExecution.tsx`
-- Fetches a single `WorkerExecution` by ID. Default options: `refetchOnMount: "always"`, `staleTime: 0`, `gcTime: 0`.
-- Returns `{ ...query, queryKey }`.
-```ts
-const { data, isLoading } = useFetchWorkerExecution({
-  workflowId: "wf-123",
-  workerExecutionId: "wkex-456",
-  workspace: "main",
-});
-// data -> WorkerExecution
-```
-
-**`useFetchWorkerExecutions({ workflowId, workflowExecutionId, filters?, order?, projection?, pageSize?, queryOptions? })`** — `src/hooks/workflow/useFetchWorkerExecutions.tsx`
-- Infinite/paginated list of worker executions for a given workflow execution. `query.data` is a flat `WorkerExecution[]`.
-- `filters` must include a `workspace` filter. Returns `{ query, queryKey }`.
-```ts
-const { query } = useFetchWorkerExecutions({
-  workflowId: "wf-123",
-  workflowExecutionId: "wfex-456",
-  filters: [{ field: "workspace", value: "main" }],
-  pageSize: 20,
-});
-const workerExecutions = query.data ?? [];
-```
-
----
-
-### Contexts Reference
-
-#### Required Providers
-
-All required providers are wired in `src/App.tsx` in this nesting order (outermost first):
-`ThemeProviderWrapper` → `BroadcastChannelProvider` → `AppConfigProvider` → `QueryClientProvider` → `AppAlertProvider`
-
-**`ThemeProviderWrapper`** — `src/components/themeProviderWrapper/`
-- Applies the MUI theme. Must be outermost — all MUI components (including Alert) depend on it.
-
-**`BroadcastChannelProvider`** — `src/contexts/broadcastChannelContext/`
-- Provides cross-tab pub/sub via the browser `BroadcastChannel` API.
-- Exposes `{ post(message), subscribe(fn), lastMessage }` via `useBroadcastChannel()`.
-
-**`AppConfigProvider`** — `src/contexts/appConfigContext/`
-- Reads `window.APP_CONFIG` and merges `/app-config.dev.json` overrides (dev only).
-- Exposes `{ appId, appEnvironmentVar }` via `useAppConfig()`.
-
-**`AppAlertProvider`** — `src/contexts/appAlertContext/`
-- Global MUI Snackbar/Alert. Exposes `{ showAlert(options), hideAlert() }` via `useAppAlert()`.
-- Must be inside `QueryClientProvider` (mutation hooks that show alerts live here).
-
----
-
-#### Optional Providers
-
-**`AgGridLicenseProvider`** — `src/contexts/agGridLicenseContext/agGridLicenseProvider.tsx`
-- **Requires `ag-grid-enterprise`** (not in base template). Install with `npm install ag-grid-enterprise` before using.
-- Manages the AG Grid Enterprise license. Must wrap any subtree that renders AG Grid Enterprise components.
-- Must be inside `BroadcastChannelProvider` (uses broadcast channel to request/receive the license).
-- Listens for `SEND_AG_GRID_LICENSE` broadcast message from the parent frame (Everysk shell) and calls `LicenseManager.setLicenseKey(license)`.
-- Sends `REQUEST_AG_GRID_LICENSE` on mount to trigger the shell to respond.
-- In **production**: renders `<GlobalLoading>` until the license is received.
-- In **development** (`import.meta.env.DEV`): skips the wait, renders children immediately.
-- If `ag-grid-enterprise` is not installed: dynamic import fails silently, children render normally.
-```tsx
-// Wrap only the AG Grid subtree, not the whole app
-<AgGridLicenseProvider>
-  <MyAgGridPage />
-</AgGridLicenseProvider>
-```
-
----
-
-### API Endpoints Used:
-- `GET /workspaces` — List all workspaces
-- `GET /portfolios` — List portfolios (with workspace filter)
-- `POST /portfolios` — Create a portfolio
-- `DELETE /portfolios/{id}` — Delete a portfolio
-- `GET /datastores` — List datastores (with workspace filter)
-- `POST /datastores` — Create a datastore
-- `DELETE /datastores/{id}` — Delete a datastore
-- `GET /workflows?workspace={name}` — List workflows in a workspace (workspace must be a direct query param, NOT inside a JSON `query` string)
-- `GET /workflows/{workflow_id}/workflow_executions` — List executions for a specific workflow (the standalone `/workflow_executions` endpoint does NOT exist)
-- `GET /workflows/{workflow_id}/workflow_executions/{execution_id}` — Get a single workflow execution
-- `GET /workflows/{workflow_id}/workflow_executions/{execution_id}/worker_executions` — List worker executions for a workflow execution
-- `GET /workflows/{workflow_id}/workflow_executions/{execution_id}/worker_executions/{worker_execution_id}` — Get a single worker execution
-- `GET /workspaces/{name}` — Get a single workspace by name
+Provider nesting is wired in `src/App.tsx`:
+`ThemeProviderWrapper` → `BroadcastChannelProvider` → `AppConfigProvider` → `QueryClientProvider` → `AppAlertProvider`.
 
 ## Running
 - Dev server: `bash scripts/check-env.sh && npm run dev` (port 5000) — validates secrets before starting Vite
