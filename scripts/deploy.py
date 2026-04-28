@@ -120,6 +120,20 @@ def main():
         print(f'ERROR: config.json not found at {config_path}')
         sys.exit(1)
 
+    # Lint gate — must pass before build
+    print('Running lint...')
+    result = subprocess.run(['npm', 'run', 'lint'], cwd=PROJECT_ROOT)
+    if result.returncode != 0:
+        print('ERROR: Lint failed. Fix lint errors before deploying.')
+        sys.exit(1)
+
+    # Test gate — must pass before build
+    print('Running tests...')
+    result = subprocess.run(['npm', 'test'], cwd=PROJECT_ROOT)
+    if result.returncode != 0:
+        print('ERROR: Tests failed. Fix failing tests before deploying.')
+        sys.exit(1)
+
     # Build
     print('Building project...')
     subprocess.run(['npm', 'install'], cwd=PROJECT_ROOT, check=True)

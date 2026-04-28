@@ -19,13 +19,16 @@ npm run test:watch  # watch mode for TDD
 1. **Test before implementation** — never create the implementation file before the `.test.ts(x)`. RED must happen before GREEN.
 2. **Co-location required** — the test file lives in the same directory as the source, same name: `Button.tsx` → `Button.test.tsx`.
 3. **Confirm RED** — run `npm test` and see the test fail before implementing. Expected failure is "cannot find module" or an assertion error — not a syntax error.
-4. **Deploy gate** — `npm test` must pass before any deploy, no exceptions.
+4. **Run lint after every change — and fix all errors before proceeding** — after modifying any `.ts` or `.tsx` file: run `npm run lint:fix` first (auto-fixes what it can), then `npm run lint` to confirm zero errors. You cannot mark a task as done or move to the next step while lint errors remain. Deploy will fail if lint is not clean.
+5. **Deploy gate** — `npm run lint` and `npm test` must both pass before any deploy, no exceptions.
 
 ## Anti-patterns
 
 - Creating implementation and tests at the same time
 - Not running `npm test` in RED mode to confirm the failure
 - Using `it.skip` or `xit` to work around failing tests
+- Skipping `npm run lint` after changes and leaving errors for the build to catch
+- Running only `lint:fix` without checking `lint` afterwards — auto-fix doesn't catch everything
 
 ---
 
@@ -213,5 +216,6 @@ Do not use `--passWithNoTests`, `it.skip`, or `xit` to bypass failures.
 - [ ] Test file exists co-located next to the source file
 - [ ] Tests failed (RED) before implementing
 - [ ] Tests pass (GREEN) after implementing
+- [ ] `npm run lint` passes with zero errors
 - [ ] `npm test` passes with zero failures
 - [ ] No tests were skipped without explicit justification in a comment
