@@ -54,6 +54,9 @@ export default defineConfig(({ mode, command }) => {
       setupFiles: ["./src/test/setup.ts"],
       include: ["src/**/*.test.{ts,tsx}"],
       css: false,
+      alias: {
+        "ag-grid-enterprise": resolve(__dirname, "src/test/mocks/agGridEnterprise.ts"),
+      },
     },
   };
 });

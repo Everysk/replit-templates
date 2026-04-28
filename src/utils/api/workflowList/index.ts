@@ -1,8 +1,8 @@
 import { isAxiosError, type AxiosInstance, type AxiosResponse } from "axios";
 
-import type { DefaultObject } from "../../types/defaultObject";
-import type { Workflow, WorkflowExecution } from "../../types/workflow";
-import type { Workspace } from "../../types/workspace";
+import type { DefaultObject } from "../../../types/defaultObject";
+import type { Workflow, WorkflowExecution } from "../../../types/workflow";
+import type { Workspace } from "../../../types/workspace";
 
 const baseUrl = "workflows";
 const workspacesBaseUrl = "workspaces";

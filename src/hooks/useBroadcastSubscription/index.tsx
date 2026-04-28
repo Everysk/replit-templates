@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
-import useBroadcastChannel from "./useBroadcastChannel";
-import type { Message } from "../contexts/broadcastChannelContext/broadcastChannelType";
+import useBroadcastChannel from "../useBroadcastChannel";
+import type { Message } from "../../contexts/broadcastChannelContext/broadcastChannelType";
 
 /**
  * useBroadcastSubscription

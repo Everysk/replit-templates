@@ -2,8 +2,8 @@ import type React from "react";
 import { useMemo } from "react";
 
 import CssBaseline from '@mui/material/CssBaseline';
+import ThemeProvider from "@mui/system/ThemeProvider";
 import type { Theme } from "@mui/material/styles";
-import { ThemeProvider } from '@mui/material/styles';
 
 import getTheme from "./themes";
 

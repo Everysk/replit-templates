@@ -23,7 +23,7 @@ export const AgGridLicenseProvider = ({ children }: PropsWithChildren) => {
         let cleanup: (() => void) | undefined;
         let cancelled = false;
 
-        // @ts-ignore - ag-grid-enterprise is an optional dependency
+        // @ts-expect-error - ag-grid-enterprise is an optional dependency
         import(/* @vite-ignore */ "ag-grid-enterprise")
             .then(({ LicenseManager }) => {
                 if (cancelled) return;

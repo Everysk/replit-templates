@@ -40,18 +40,21 @@ Test files live **next to the source file** they test, same directory. Never in 
 src/
   hooks/
     useAxios.tsx
-    useAxios.test.tsx        ← co-located
+    useAxios.test.tsx           ← named after the hook
   utils/
     api/
       transform.ts
-      transform.test.ts      ← same directory
+      transform.test.ts         ← named after the module
   components/
+    GlobalLoading/
+      index.tsx
+      GlobalLoading.test.tsx    ← named after the component, NOT index.test.tsx
     Button/
       Button.tsx
-      Button.test.tsx        ← same directory
+      Button.test.tsx
 ```
 
-Naming: `<SourceFile>.test.ts` or `<SourceFile>.test.tsx` (use `.tsx` if the test renders JSX).
+Naming: `<ComponentName>.test.tsx` or `<utilName>.test.ts`. Never name a test file `index.test.tsx` — use the actual component or module name so tabs are identifiable in the editor.
 
 ---
 
@@ -168,6 +171,14 @@ it('shows error state when API fails', async () => {
   expect(await screen.findByRole('alert')).toBeInTheDocument();
 });
 ```
+
+---
+
+## Common Gotchas
+
+- **MUI `Backdrop` hides children from accessibility queries** — elements inside `<Backdrop>` are wrapped with `aria-hidden="true"`. Use `{ hidden: true }` to find them: `screen.getByRole("progressbar", { hidden: true })`.
+- **MUI exit transitions keep elements in the DOM** — components like `Snackbar`, `Dialog`, and `Drawer` use slide/fade-out animations. In jsdom there are no real CSS transitions, so the element stays in the DOM until the transition timeout fires (~195ms). Use `waitFor` when asserting disappearance: `await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument())`.
+- **jsdom resolves color names to RGB** — `color: "green"` becomes `rgb(0, 128, 0)` in `toHaveStyle` assertions. Use the computed value.
 
 ---
 

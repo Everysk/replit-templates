@@ -6,7 +6,7 @@ import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import CheckIcon from "@mui/icons-material/Check";
 
-import type { Workspace } from "../../types/workspace";
+import type { Workspace } from "@src/types/workspace";
 
 interface WorkspaceComboboxProps {
     workspaces: Workspace[];

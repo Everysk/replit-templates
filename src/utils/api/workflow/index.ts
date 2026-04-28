@@ -1,8 +1,8 @@
 import { isAxiosError, type AxiosInstance, type AxiosResponse } from "axios";
 
-import type { DefaultObject } from "../../types/defaultObject";
-import type { FilterExpression, QueryObject } from "../../types/entityQuery";
-import type { WorkerExecution, WorkerExecutionListResponse, WorkerExecutionSingleResponse, Workflow, WorkflowExecution, WorkflowExecutionListResponse, WorkflowExecutionSingleResponse, WorkflowListResponse, WorkflowSingleResponse } from "../../types/workflow";
+import type { DefaultObject } from "../../../types/defaultObject";
+import type { FilterExpression, QueryObject } from "../../../types/entityQuery";
+import type { WorkerExecution, WorkerExecutionListResponse, WorkerExecutionSingleResponse, Workflow, WorkflowExecution, WorkflowExecutionListResponse, WorkflowExecutionSingleResponse, WorkflowListResponse, WorkflowSingleResponse } from "../../../types/workflow";
 
 const baseUrl = "workflows";
 

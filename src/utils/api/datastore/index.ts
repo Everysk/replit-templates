@@ -1,8 +1,8 @@
 import { isAxiosError, type AxiosInstance, type AxiosResponse } from "axios";
 
-import type { DefaultObject } from "../../types/defaultObject";
-import type { DeleteEntityDefaultResponse, FilterExpression, QueryObject } from "../../types/entityQuery";
-import type { Datastore, DatastoreSingleResponse, DatastoreListResponse, DeleteDatastoreResponse } from "../../types/datastore";
+import type { DefaultObject } from "../../../types/defaultObject";
+import type { DeleteEntityDefaultResponse, FilterExpression, QueryObject } from "../../../types/entityQuery";
+import type { Datastore, DatastoreSingleResponse, DatastoreListResponse, DeleteDatastoreResponse } from "../../../types/datastore";
 
 const baseUrl = "datastores";
 
