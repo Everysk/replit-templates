@@ -27,8 +27,22 @@
 - In production: `<meta name="app-config">` tag tells runtime where to load config
 - `dev/app-config.dev.json` content: `{"app": ""}` — fill in app name for dev
 
+## Path Aliases
+- `@src` → `src/` (configured in `resolve.alias` and `tsconfig.app.json` `paths`)
+- Usage: `import Foo from "@src/components/Foo"`
+
+## Test Configuration (Vitest)
+- Environment: `jsdom`
+- Globals: `true` (no need to import `describe`, `it`, `expect`)
+- Setup file: `src/test/setup.ts` (jest-dom matchers + MSW lifecycle)
+- Pattern: `src/**/*.test.{ts,tsx}`
+- CSS disabled in tests
+
 ## npm Scripts
 - `npm run dev` → vite (dev server)
 - `npm run build` → tsc -b && vite build
 - `npm run lint` → eslint
 - `npm run preview` → vite preview
+- `npm test` → vitest run (single pass)
+- `npm run test:watch` → vitest (watch mode)
+- `npm run test:ui` → vitest --ui (browser UI)

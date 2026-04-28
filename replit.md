@@ -91,6 +91,7 @@ const message = await anthropic.messages.create({
 | **vercel-react-best-practices** | `.agents/skills/vercel-react-best-practices` | When reviewing or optimizing React component performance. 50+ rules covering rendering, re-renders, async boundaries, bundle optimization, and JS patterns. |
 | **browser-use** | `.agents/skills/browser-use` | When automating browser interactions — screenshots, form fills, navigation, UI testing within the agent. |
 | **everysk-utils** | `.agents/skills/everysk-utils` | **Before implementing any feature** that fetches or mutates Everysk entities (portfolios, datastores, files, workflows, workspaces), listens to or sends broadcast messages, uses app config or alerts, or wires providers. Contains all built-in hooks and providers — read it before writing any data or messaging code to avoid duplicating utilities that already exist. |
+| **tdd** | `.agents/skills/tdd` | **Before writing or modifying any `.ts` or `.tsx` file.** Enforces Red→Green→Refactor cycle, co-located test file convention, and deploy gate (`npm test` must pass). |
 
 **Mandatory Rules (apply to every conversation, including new sessions and fresh imports):**
 - Always load the **everysk-api** skill at the start of **every conversation without exception** — this template is an Everysk platform app and all work requires platform knowledge. Do NOT skip this step, even for simple questions. **You MUST also read ALL 7 reference files** in `.agents/skills/everysk-api/references/` (sdk-entities, sdk-engines, core, api-reference, server, worker-patterns, branding) — these are not optional progressive-disclosure files, they are mandatory context for every session.
@@ -105,6 +106,7 @@ const message = await anthropic.messages.create({
 - Always load the **systematic-debugging** skill when encountering any error, bug, or unexpected behavior — before attempting a fix.
 - Always load the **vercel-react-best-practices** skill before writing or reviewing React components to apply performance best practices.
 - Always load the **browser-use** skill when performing any browser automation or UI interaction tasks.
+- Always load the **tdd** skill before writing or modifying **any** `.ts` or `.tsx` file. Write the failing test first, confirm RED, implement, confirm GREEN. Run `npm test` before any deploy.
 
 
 ---
