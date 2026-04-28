@@ -14,6 +14,19 @@ npm test            # single run (CI / deploy gate)
 npm run test:watch  # watch mode for TDD
 ```
 
+## Critical rules (read before writing any code)
+
+1. **Test before implementation** — never create the implementation file before the `.test.ts(x)`. RED must happen before GREEN.
+2. **Co-location required** — the test file lives in the same directory as the source, same name: `Button.tsx` → `Button.test.tsx`.
+3. **Confirm RED** — run `npm test` and see the test fail before implementing. Expected failure is "cannot find module" or an assertion error — not a syntax error.
+4. **Deploy gate** — `npm test` must pass before any deploy, no exceptions.
+
+## Anti-patterns
+
+- Creating implementation and tests at the same time
+- Not running `npm test` in RED mode to confirm the failure
+- Using `it.skip` or `xit` to work around failing tests
+
 ---
 
 ## File Convention
@@ -163,7 +176,9 @@ it('shows error state when API fails', async () => {
 | Constants with no logic (`ROUTES`, `COLORS`, plain enums) | Nothing to assert — no behavior |
 | Style-only files (`.css`, theme tokens) | No logic |
 | `src/test/mocks/*` | Test infrastructure itself |
-| Third-party library internals | Not our code |
+| Snapshot tests | Break on any UI change and don't express intent |
+| Component internals (state variable names, unexported functions) | Test behavior, not implementation — internals can change without breaking the contract |
+| Third-party component behavior (MUI `<Dialog>`, `<Button>`, `<TextField>`, animations) | Not our code — don't test that the Dialog closes with an animation, test that your logic calls onClose |
 
 A file is testable if it has **logic**: branching, transformations, side effects, state. If a file is just declarations, skip it.
 
