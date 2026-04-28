@@ -1,6 +1,6 @@
 import { useContext } from "react";
 
-import AppConfigContext from "../contexts/appConfigContext";
+import AppConfigContext from "@src/contexts/appConfigContext";
 
 /**
  * useAppConfig

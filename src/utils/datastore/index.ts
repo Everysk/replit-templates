@@ -1,5 +1,5 @@
-import type { Datastore } from "../../types/datastore";
-import type { DefaultObject } from "../../types/defaultObject";
+import type { Datastore } from "@src/types/datastore";
+import type { DefaultObject } from "@src/types/defaultObject";
 
 type Cell = string | number | null;
 type DatastoreData = Cell[][];

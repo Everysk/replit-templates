@@ -1,3 +1,4 @@
+import { QueryClient } from "@tanstack/react-query";
 import { getQueryFn } from ".";
 
 const makeFetch = (status: number, body: unknown, statusText = "") =>
@@ -15,7 +16,7 @@ it("fetches queryKey joined by '/' with credentials: include", async () => {
     vi.stubGlobal("fetch", makeFetch(200, { data: 1 }));
 
     const fn = getQueryFn({ on401: "throw" });
-    await fn({ queryKey: ["api", "users", "42"], signal: new AbortController().signal, meta: undefined });
+    await fn({ queryKey: ["api", "users", "42"], signal: new AbortController().signal, meta: undefined, client: new QueryClient() });
 
     expect(fetch).toHaveBeenCalledWith("api/users/42", { credentials: "include" });
 });
@@ -24,7 +25,7 @@ it("returns parsed JSON on success", async () => {
     vi.stubGlobal("fetch", makeFetch(200, { name: "Alice" }));
 
     const fn = getQueryFn({ on401: "throw" });
-    const result = await fn({ queryKey: ["api/users"], signal: new AbortController().signal, meta: undefined });
+    const result = await fn({ queryKey: ["api/users"], signal: new AbortController().signal, meta: undefined, client: new QueryClient() });
 
     expect(result).toEqual({ name: "Alice" });
 });
@@ -33,7 +34,7 @@ it("returns null on 401 when on401 is returnNull", async () => {
     vi.stubGlobal("fetch", makeFetch(401, null));
 
     const fn = getQueryFn({ on401: "returnNull" });
-    const result = await fn({ queryKey: ["api/me"], signal: new AbortController().signal, meta: undefined });
+    const result = await fn({ queryKey: ["api/me"], signal: new AbortController().signal, meta: undefined, client: new QueryClient() });
 
     expect(result).toBeNull();
 });
@@ -43,7 +44,7 @@ it("throws on 401 when on401 is throw", async () => {
 
     const fn = getQueryFn({ on401: "throw" });
     await expect(
-        fn({ queryKey: ["api/me"], signal: new AbortController().signal, meta: undefined })
+        fn({ queryKey: ["api/me"], signal: new AbortController().signal, meta: undefined, client: new QueryClient() })
     ).rejects.toThrow("401");
 });
 
@@ -62,7 +63,7 @@ it("throws with status and response text on non-ok response", async () => {
 
     const fn = getQueryFn({ on401: "throw" });
     await expect(
-        fn({ queryKey: ["api/thing"], signal: new AbortController().signal, meta: undefined })
+        fn({ queryKey: ["api/thing"], signal: new AbortController().signal, meta: undefined, client: new QueryClient() })
     ).rejects.toThrow("404: Resource missing");
 });
 
@@ -77,6 +78,6 @@ it("falls back to statusText when response body is empty", async () => {
 
     const fn = getQueryFn({ on401: "throw" });
     await expect(
-        fn({ queryKey: ["api/thing"], signal: new AbortController().signal, meta: undefined })
+        fn({ queryKey: ["api/thing"], signal: new AbortController().signal, meta: undefined, client: new QueryClient() })
     ).rejects.toThrow("503: Service Unavailable");
 });

@@ -2,8 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import useAxios from "./../useAxios";
 import useAppAlert from "./../useAppAlert";
-import type { Datastore } from "../../types/datastore";
-import { deleteDatastore, postDatastore, updateDatastore } from "../../utils/api/datastore";
+import type { Datastore } from "@src/types/datastore";
+import { deleteDatastore, postDatastore, updateDatastore } from "@src/utils/api/datastore";
 
 type CreateDatastoreProps = {
     data: Partial<Datastore>;

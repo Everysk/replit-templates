@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { DefaultObject } from "../../types/defaultObject";
+import type { DefaultObject } from "@src/types/defaultObject";
 
 declare global {
     interface Window {

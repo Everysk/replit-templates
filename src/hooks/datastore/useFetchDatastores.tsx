@@ -4,13 +4,13 @@ import { useInfiniteQuery, type UseInfiniteQueryOptions, type QueryKey } from "@
 
 //import type { GridApi } from "ag-grid-community";
 
-import useAxios from "../useAxios";
-import { datastoreToObject } from "../../utils/datastore";
-import { getDatastores } from "../../utils/api/datastore";
+import useAxios from "@src/hooks/useAxios";
+import { datastoreToObject } from "@src/utils/datastore";
+import { getDatastores } from "@src/utils/api/datastore";
 
-import type { Datastore, DatastoreListResponse, DatastoreWithRows } from "../../types/datastore";
-import type { FetchEntitiesParams, EntityDefaultResponse } from "../../types/entityQuery";
-import { buildQueryKey, buildQueryObject } from "../../utils/api/entityQuery";
+import type { Datastore, DatastoreListResponse, DatastoreWithRows } from "@src/types/datastore";
+import type { FetchEntitiesParams, EntityDefaultResponse } from "@src/types/entityQuery";
+import { buildQueryKey, buildQueryObject } from "@src/utils/api/entityQuery";
 
 type PageToken = string | null;
 

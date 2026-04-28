@@ -2,11 +2,11 @@ import { useEffect } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 
-import useAxios from "../useAxios";
-import useAppAlert from "../useAppAlert";
-import type { Workspace } from "../../types/workspace";
-import { getWorkspace } from "../../utils/api/workspace";
-import type { EntityQueryOptions } from "../../types/entityQuery";
+import useAxios from "@src/hooks/useAxios";
+import useAppAlert from "@src/hooks/useAppAlert";
+import type { Workspace } from "@src/types/workspace";
+import { getWorkspace } from "@src/utils/api/workspace";
+import type { EntityQueryOptions } from "@src/types/entityQuery";
 
 export type FetchWorkspaceProps<TData = Workspace, TSelected = TData> = {
     name: string;

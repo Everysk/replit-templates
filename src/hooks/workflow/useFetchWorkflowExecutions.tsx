@@ -1,11 +1,11 @@
 import { useMemo } from "react";
 import { useInfiniteQuery, type UseInfiniteQueryOptions, type QueryKey } from "@tanstack/react-query";
 
-import useAxios from "../useAxios";
-import { getWorkflowExecutions } from "../../utils/api/workflow";
-import type { FetchEntitiesParams } from "../../types/entityQuery";
-import { buildQueryKey, buildQueryObject } from "../../utils/api/entityQuery";
-import type { WorkflowExecution, WorkflowExecutionListResponse } from "../../types/workflow";
+import useAxios from "@src/hooks/useAxios";
+import { getWorkflowExecutions } from "@src/utils/api/workflow";
+import type { FetchEntitiesParams } from "@src/types/entityQuery";
+import { buildQueryKey, buildQueryObject } from "@src/utils/api/entityQuery";
+import type { WorkflowExecution, WorkflowExecutionListResponse } from "@src/types/workflow";
 
 type PageToken = string | null;
 

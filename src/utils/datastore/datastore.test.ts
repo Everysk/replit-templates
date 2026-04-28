@@ -65,7 +65,7 @@ describe("objectToDatastore", () => {
     });
 
     it("uses null for missing keys", () => {
-        const result = objectToDatastore(["name", "age"], [{ name: "Bob" } as any]);
+        const result = objectToDatastore(["name", "age"], [{ name: "Bob" } as Record<string, string | number | null>]);
         expect(result[1]).toEqual(["Bob", null]);
     });
 
@@ -110,7 +110,7 @@ describe("mountDatastoreProps", () => {
         version: "1",
         description: "desc",
         tags: ["a"],
-        link_uid: null,
+        link_uid: undefined,
         date_time: "2024-01-01T00:00:00Z",
         created: 0,
         updated: 0,
@@ -134,7 +134,7 @@ describe("mountDatastoreProps", () => {
     });
 
     it("falls back to empty array when data is absent", () => {
-        const result = mountDatastoreProps({ ...baseDatastore, data: undefined });
+        const result = mountDatastoreProps({ ...baseDatastore, data: undefined } as unknown as Datastore);
         expect(result.header).toEqual([]);
     });
 

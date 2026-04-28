@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import useAxios from "../useAxios";
-import useAppAlert from "../useAppAlert";
-import type { File } from "../../types/file";
-import { deleteFile, postFile, updateFile } from "../../utils/api/file";
+import useAxios from "@src/hooks/useAxios";
+import useAppAlert from "@src/hooks/useAppAlert";
+import type { File } from "@src/types/file";
+import { deleteFile, postFile, updateFile } from "@src/utils/api/file";
 
 type CreateFileProps = {
     data: Partial<File>;

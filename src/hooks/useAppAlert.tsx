@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import AppAlertContext from "../contexts/appAlertContext";
+import AppAlertContext from "@src/contexts/appAlertContext";
 
 /**
  * useAppAlert

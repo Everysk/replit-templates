@@ -2,12 +2,12 @@ import { useEffect } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 
-import useAxios from "../useAxios";
-import useAppAlert from "../useAppAlert";
-import { getDatastore } from "../../utils/api/datastore";
-import { datastoreToObject } from "../../utils/datastore";
-import type { DatastoreWithRows } from "../../types/datastore";
-import type { EntityQueryOptions, FetchEntityParams } from "../../types/entityQuery";
+import useAxios from "@src/hooks/useAxios";
+import useAppAlert from "@src/hooks/useAppAlert";
+import { getDatastore } from "@src/utils/api/datastore";
+import { datastoreToObject } from "@src/utils/datastore";
+import type { DatastoreWithRows } from "@src/types/datastore";
+import type { EntityQueryOptions, FetchEntityParams } from "@src/types/entityQuery";
 
 export type FetchDatastoreProps = FetchEntityParams<DatastoreWithRows>;
 
