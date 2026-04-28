@@ -8,28 +8,39 @@
 - `useAxios`
 - `useBroadcastChannel`
 - `useBroadcastSubscription`
-- `useDatastoreMutations`
 - `useFetchDatastore`
-- `useFetchFile`
+- `useFetchDatastores`
+- `useDatastoreMutations`
 - `useFetchPortfolio`
-- `useFetchWorkflowExecutions`
-- `useFetchWorkflows`
-- `useFetchWorkspaces`
-- `useFileMutations`
+- `useFetchPortfolios`
 - `usePortfolioMutations`
-- `useRunWorkflowMutations`
+- `useFetchFile`
+- `useFetchFiles`
+- `useFileMutations`
+- `useFetchWorkflow`
+- `useFetchWorkflows`
+- `useWorkflowRunMutations`
+- `useFetchWorkflowExecution`
+- `useFetchWorkflowExecutions`
+- `useFetchWorkerExecution`
+- `useFetchWorkerExecutions`
+- `useFetchWorkspace`
+- `useFetchWorkspaces`
 
 ### Contexts
 - `AppAlertProvider`
 - `AppConfigProvider`
 - `BroadcastChannelProvider`
 - `BroadcastChannelHandler`
+- `AgGridLicenseProvider` *(optional — requires `ag-grid-enterprise`)*
 
 ---
 
 # App Template
 
 This README summarizes the project layout and how to use the React hooks, contexts and the Vite setup included in this repository.
+
+> **New to Everysk + Replit?** Read the setup guide first: [Using Replit with Everysk](https://docs.google.com/document/d/1DJrgKWCkoXnQLx8ZgZQi4T_EIy8jBXt1WECEwHfU7ZU/edit?usp=sharing)
 
 ## Quick highlights
 - React 19 + TypeScript app scaffold with MUI 7 and Tailwind CSS 4.
@@ -219,11 +230,63 @@ All providers are wired in `src/App.tsx`. The required nesting order (outermost 
 
 ```tsx
 import { queryClient } from "./utils/queryClient";
+import { ThemeProviderWrapper } from "./components/themeProviderWrapper";
 import { BroadcastChannelProvider } from "./contexts/broadcastChannelContext";
 import { AppConfigProvider } from "./contexts/appConfigContext";
-import { ThemeProviderWrapper } from "./components/themeProviderWrapper";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { AppAlertProvider } from "./contexts/appAlertContext";
+
+function App() {
+  return (
+    <ThemeProviderWrapper>
+      <BroadcastChannelProvider>
+        <AppConfigProvider>
+          <QueryClientProvider client={queryClient}>
+            <AppAlertProvider>
+              {/* your page content here */}
+            </AppAlertProvider>
+          </QueryClientProvider>
+        </AppConfigProvider>
+      </BroadcastChannelProvider>
+    </ThemeProviderWrapper>
+  );
+}
+```
+
+**Why this order:**
+- `ThemeProviderWrapper` outermost — MUI theme must wrap everything; all MUI components (including Alert) depend on it
+- `BroadcastChannelProvider` — no dependencies, provides cross-tab messaging to everything below
+- `AppConfigProvider` — reads `window.APP_CONFIG` (available immediately after bootstrap)
+- `QueryClientProvider` — must wrap any component that calls `useQuery`/`useMutation`
+- `AppAlertProvider` — innermost; hooks that show alerts live inside Query context
+
+---
+
+# Contexts
+
+## AgGridLicenseProvider
+
+> **Optional provider** — requires `ag-grid-enterprise`. Run `npm install ag-grid-enterprise` before using it.
+
+Manages the AG Grid Enterprise license for the app. Must wrap any component that renders an AG Grid Enterprise table.
+
+**What it does**
+- Listens for a `SEND_AG_GRID_LICENSE` broadcast message from the parent frame (Everysk shell).
+- Sets the license key via `LicenseManager.setLicenseKey()` when the message is received.
+- In **production**, renders a loading screen (`GlobalLoading`) until the license arrives.
+- In **development** (`import.meta.env.DEV`), skips the license wait and renders children immediately.
+- If `ag-grid-enterprise` is not installed, degrades gracefully: children render normally without license enforcement.
+
+**Required package**
+```bash
+npm install ag-grid-enterprise
+```
+
+**Wiring**
+Place `AgGridLicenseProvider` inside `BroadcastChannelProvider` (it depends on the broadcast channel) and wrap only the subtree that uses AG Grid Enterprise components:
+
+```tsx
+import { AgGridLicenseProvider } from "./contexts/agGridLicenseContext/agGridLicenseProvider";
 
 function App() {
   return (
@@ -232,7 +295,9 @@ function App() {
         <ThemeProviderWrapper>
           <QueryClientProvider client={queryClient}>
             <AppAlertProvider>
-              {/* your page content here */}
+              <AgGridLicenseProvider>
+                {/* components that use AG Grid Enterprise */}
+              </AgGridLicenseProvider>
             </AppAlertProvider>
           </QueryClientProvider>
         </ThemeProviderWrapper>
@@ -242,16 +307,13 @@ function App() {
 }
 ```
 
-**Why this order:**
-- `BroadcastChannelProvider` outermost — no dependencies, provides cross-tab messaging to everything
-- `AppConfigProvider` — reads `window.APP_CONFIG` (available immediately after bootstrap)
-- `ThemeProviderWrapper` — MUI theme must wrap Query and Alert (Alert uses MUI components)
-- `QueryClientProvider` — must wrap any component that calls `useQuery`/`useMutation`
-- `AppAlertProvider` — innermost; hooks that show alerts live inside Query context
+**Broadcast messages**
+| Type | Direction | Payload | Description |
+|------|-----------|---------|-------------|
+| `REQUEST_AG_GRID_LICENSE` | app → shell | — | Sent on mount to request the license key |
+| `SEND_AG_GRID_LICENSE` | shell → app | `{ license: string }` | Shell responds with the license key |
 
 ---
-
-# Contexts
 
 ## AppAlertProvider
 
@@ -342,8 +404,8 @@ Convenience hook to access the global alert API from `AppAlertProvider`.
 const { showAlert } = useAppAlert();
 
 showAlert({
-  message: "Saved successfully.",
-  severity: "success",
+  message: “Saved successfully.”,
+  severity: “success”,
   autoHideDuration: 3000,
 });
 ```
@@ -387,13 +449,13 @@ Returns a memoized Axios client already configured to call the Everysk API.
 
 **Usage**
 ```ts
-import { useAxios } from "./hooks/useAxios";
+import { useAxios } from “./hooks/useAxios”;
 
 const MyComponent = () => {
   const { api } = useAxios();
 
   useEffect(() => {
-    api.get("/some/endpoint").then((res) => console.log(res.data));
+    api.get(“/some/endpoint”).then((res) => console.log(res.data));
   }, [api]);
 
   return null;
@@ -420,7 +482,7 @@ useEffect(() => {
   return unsub;
 }, [subscribe]);
 
-post({ type: "PING", payload: { at: Date.now() } });
+post({ type: “PING”, payload: { at: Date.now() } });
 ```
 
 ---
@@ -436,8 +498,8 @@ Higher-level helper that subscribes on mount and unsubscribes on unmount.
 **Usage**
 ```ts
 useBroadcastSubscription((msg) => {
-  if (msg.type === "PING") {
-    console.log("ping:", msg.payload);
+  if (msg.type === “PING”) {
+    console.log(“ping:”, msg.payload);
   }
 });
 ```
@@ -446,282 +508,481 @@ useBroadcastSubscription((msg) => {
 
 ## useFetchDatastore
 
-Data fetching hook (TanStack Query) to retrieve one datastore (`id` provided) or a list (`id: null`).
+Fetches a single datastore by ID (TanStack Query `useQuery`). Alerts on error via `useAppAlert`.
+
+**Parameters**
+- `id` — datastore identifier (required)
+- `workspace` — workspace name (required)
+- `queryOptions` — TanStack Query options (optional; defaults: `refetchOnMount: “always”`, `staleTime: 0`, `gcTime: 0`)
 
 **Returns**
-- Standard TanStack Query result (`data`, `isLoading`, `isFetching`, `error`, `refetch`, etc.)
-- `queryKey`: stable key for cache invalidation reuse
-- `datastoresProps`: metadata map keyed by datastore id (useful for UI)
-
-**Data shape (important)**
-- `id` provided → `data` is an array of row objects for that datastore
-- `id: null` + `mergeResult: false` → `data` is an array of arrays (grouped per datastore)
-- `id: null` + `mergeResult: true` → `data` is a single flat array
-- Each row includes `datastoreId` so you can trace the source datastore
+- All standard TanStack Query fields (`data`, `isLoading`, `isFetching`, `error`, `refetch`, etc.)
+- `queryKey` — stable cache key, pass to `useDatastoreMutations` for automatic invalidation
+- `data` is a `DatastoreWithRows` object: full `Datastore` shape with `data` replaced by `DefaultObject[]` (rows transformed via `datastoreToObject`)
 
 **Example**
 ```ts
-import { useFetchDatastore } from "./hooks/useFetchDatastore";
-import type { FilterClause } from "./types/entityQuery";
-
-export function DatastoreResultsExample() {
-  const filters: FilterClause[] = [
-    { field: "workspace", value: "workspace" },
-    { field: "link_uid", value: "linkuid" },
-    { field: "date", op: ">=", value: "20260110" },
-    { field: "date", op: "<=", value: "20260114" },
-  ];
-
-  const {
-    data,
-    datastoresProps,
-    isLoading,
-    isFetching,
-    error,
-    refetch,
-  } = useFetchDatastore({
-    id: null,
-    filters,
-    mergeResult: true,
-    order: ["date desc"],
-    queryOptions: {
-      staleTime: 30_000,
-      refetchOnWindowFocus: false,
-    },
-  });
-
-  if (isLoading) return <div>Loading...</div>;
-  if (error) return <div>Error</div>;
-
-  return (
-    <div>
-      {isFetching && <div>Refreshing...</div>}
-      <button onClick={() => refetch()}>Refetch</button>
-
-      <h3>Datastores metadata</h3>
-      <pre>{JSON.stringify(datastoresProps, null, 2)}</pre>
-
-      <h3>Rows (merged)</h3>
-      <pre>{JSON.stringify(data, null, 2)}</pre>
-    </div>
-  );
-}
+const { data, isLoading, queryKey } = useFetchDatastore({
+  id: “ds-123”,
+  workspace: “ws-1”,
+});
+// data -> DatastoreWithRows
+// data.data -> [{ datastoreId: “ds-123”, col1: “value”, ... }]
 ```
 
 ---
 
-## useFetchFile
+## useFetchDatastores
 
-Fetches a file (when `id` is provided) or a list of files (when `id: null`).
+Fetches a paginated list of datastores (TanStack Query `useInfiniteQuery`) with cursor-based pagination. Automatically flattens all pages into a single `DatastoreWithRows[]` via `select`.
+
+**Parameters**
+- `filters` — filter clauses (optional; must include a `workspace` filter)
+- `order` — sort clauses (optional)
+- `projection` — fields to include (optional)
+- `pageSize` — items per page (optional, default `10`)
+- `queryOptions` — TanStack infinite query options (optional)
 
 **Returns**
-- Standard TanStack Query result
-- `queryKey` for reuse in invalidation
-
-**Notes**
-- Always returns an array: for single fetch, it’s a single-item array.
-- File content is carried in `File.data` and is expected to be Base64 when present.
+- `query` — full `useInfiniteQuery` result; `query.data` is a flat `DatastoreWithRows[]`
+- `queryKey` — stable cache key
 
 **Example**
 ```ts
-const { data, isLoading } = useFetchFile({
-  id: "file-123",
-  filters: [{ field: "workspace", value: "ws-1" }],
+const { query, queryKey } = useFetchDatastores({
+  filters: [{ field: “workspace”, value: “ws-1” }],
+  pageSize: 20,
 });
-// data -> File[] (single-item array)
-```
 
----
-
-## useFetchPortfolio
-
-Fetches a portfolio (when `id` is provided) or a list of portfolios (when `id: null`).
-
-**Returns**
-- Standard TanStack Query result
-- `queryKey` for reuse in invalidation
-
-**Notes**
-- Always returns an array: for single fetch, it’s a single-item array.
-
-**Example**
-```ts
-const { data, isLoading } = useFetchPortfolio({
-  id: "pf-123",
-  filters: [{ field: "workspace", value: "ws-1" }],
-});
-// data -> Portfolio[] (single-item array)
+const datastores = query.data ?? [];
 ```
 
 ---
 
 ## useDatastoreMutations
 
-Mutation hook (TanStack Query) for datastore write operations: create / update / delete.
+Mutation hook (TanStack Query) for datastore write operations: create / update / delete. Shows success/error alerts via `useAppAlert`. Optionally invalidates a query cache key after each successful mutation.
+
+**Parameters**
+- `queryKey` — cache key to invalidate on success (optional; typically the `queryKey` from `useFetchDatastores`)
 
 **Returns**
-- An object containing three mutation handlers: `create`, `update`, `remove`
-- Each handler is a normal TanStack mutation result (supports `mutate`, `mutateAsync`, `isPending`, etc.)
+- `{ create, update, remove }` — TanStack `UseMutationResult` objects
+- Each supports `mutate`, `mutateAsync`, `isPending`, `isSuccess`, `isError`, etc.
 
-**Behavior**
-- Uses `useAppAlert` for success/error messages.
-- If you pass a `queryKey`, it invalidates cache after successful mutations.
-- `remove` requires `workspace` (API requires it as query param).
+**Notes**
+- `remove` requires `{ id, workspace }`.
+- `create` / `update` accept `data.data` as a row matrix: `[[“col1”, “col2”], [“val1”, “val2”], ...]` (header row + data rows).
 
 **Example**
 ```ts
-const { create, update, remove } = useDatastoreMutations({ queryKey: ["datastore"] });
+const { create, update, remove } = useDatastoreMutations({ queryKey });
 
-create.mutate({ data: { name: "My datastore", workspace: "ws-1" } });
+create.mutate({
+  data: { name: “My datastore”, workspace: “ws-1”, data: [[“id”, “name”], [“001”, “Alice”]] },
+});
 
-update.mutate({ id: "ds-123", data: { name: "Renamed datastore" } });
+update.mutate({
+  id: “ds-123”,
+  data: { name: “Renamed”, data: [[“id”, “name”], [“001”, “Alice”]] },
+});
 
-remove.mutate({ id: "ds-123", workspace: "ws-1" });
+remove.mutate({ id: “ds-123”, workspace: “ws-1” });
 ```
 
 ---
 
-## useFetchWorkflows
+## useFetchPortfolio
 
-Fetches a list of workflows, optionally filtered by workspace.
+Fetches a single portfolio by ID (TanStack Query `useQuery`). Alerts on error via `useAppAlert`.
+
+**Parameters**
+- `id` — portfolio identifier (required)
+- `workspace` — workspace name (required)
+- `queryOptions` — TanStack Query options (optional; defaults: `refetchOnMount: “always”`, `staleTime: 0`, `gcTime: 0`)
 
 **Returns**
-- Standard TanStack Query result (`data`, `isLoading`, `isFetching`, `error`, `refetch`, etc.)
-- `queryKey` for cache invalidation reuse
-- `data` is a `Workflow[]` array
+- All standard TanStack Query fields
+- `queryKey` — stable cache key, pass to `usePortfolioMutations` for automatic invalidation
+- `data` is a single `Portfolio` object
 
 **Example**
 ```ts
-const { data: workflows, isLoading } = useFetchWorkflows({
-  workspace: "ws-1",
-  staleTime: 30_000,
+const { data, isLoading, queryKey } = useFetchPortfolio({
+  id: “pf-123”,
+  workspace: “ws-1”,
 });
+// data -> Portfolio
 ```
 
 ---
 
-## useFetchWorkflowExecutions
+## useFetchPortfolios
 
-Fetches executions for one or more workflows in parallel (one query per workflow ID using `useQueries`).
+Fetches a paginated list of portfolios (TanStack Query `useInfiniteQuery`) with cursor-based pagination. Automatically flattens all pages into a single `Portfolio[]` via `select`.
+
+**Parameters**
+- `filters` — filter clauses (optional; must include a `workspace` filter)
+- `order` — sort clauses (optional)
+- `projection` — fields to include (optional)
+- `pageSize` — items per page (optional, default `10`)
+- `queryOptions` — TanStack infinite query options (optional)
 
 **Returns**
-- `data`: flat `WorkflowExecution[]` merged across all queried workflow IDs
-- `isLoading`: true if any query is loading
-- `isFetching`: true if any query is fetching
-- `refetch()`: triggers refetch on all queries
-- `queries`: raw array of individual query results
+- `query` — full `useInfiniteQuery` result; `query.data` is a flat `Portfolio[]`
+- `queryKey` — stable cache key
 
 **Example**
 ```ts
-const { data: executions, isLoading } = useFetchWorkflowExecutions({
-  workflowIds: ["wf-123", "wf-456"],
-  refetchInterval: 5000,
-});
-```
-
----
-
-## useFetchWorkspaces
-
-Fetches all workspaces. Refetches on every mount (`refetchOnMount: "always"`).
-
-**Returns**
-- Standard TanStack Query result
-- `queryKey` for cache invalidation reuse
-- `data` is a `Workspace[]` array
-
-**Example**
-```ts
-const { data: workspaces, isLoading } = useFetchWorkspaces();
-```
-
----
-
-## useFileMutations
-
-Mutation hook (TanStack Query) for file write operations: create / update / delete.
-
-**Returns**
-- `{ create, update, remove }` mutation handlers (TanStack standard)
-
-**Behavior / notes**
-- Uses `useAppAlert` for success/error messages.
-- Optional cache invalidation via `queryKey`.
-- File content must be Base64 in `data` (raw Base64 only; no `data:<mime>;base64,` prefix).
-- `remove` requires `workspace`.
-
-**Example**
-```ts
-const fetch = useFetchFile({
-  id: null,
-  filters: [{ field: "workspace", value: "ws-1" }],
+const { query, queryKey } = useFetchPortfolios({
+  filters: [{ field: “workspace”, value: “ws-1” }],
+  pageSize: 20,
 });
 
-const { create } = useFileMutations({ queryKey: fetch.queryKey });
-
-await create.mutateAsync({
-  data: {
-    name: "My file",
-    workspace: "ws-1",
-    content_type: "text/plain",
-    version: "1",
-    data: "SGVsbG8gd29ybGQ=",
-  },
-});
+const portfolios = query.data ?? [];
 ```
 
 ---
 
 ## usePortfolioMutations
 
-Mutation hook (TanStack Query) for portfolio write operations: create / update / delete.
+Mutation hook (TanStack Query) for portfolio write operations: create / update / delete. Shows success/error alerts via `useAppAlert`. Optionally invalidates a query cache key after each successful mutation.
+
+**Parameters**
+- `queryKey` — cache key to invalidate on success (optional; typically the `queryKey` from `useFetchPortfolios`)
 
 **Returns**
-- `{ create, update, remove }` mutation handlers (TanStack standard)
+- `{ create, update, remove }` — TanStack `UseMutationResult` objects
 
-**Behavior**
-- Uses `useAppAlert` for success/error messages.
-- Optional cache invalidation via `queryKey`.
-- `remove` requires `workspace`.
+**Notes**
+- `remove` requires `{ id, workspace }`.
 
 **Example**
 ```ts
-const fetch = useFetchPortfolio({
-  id: null,
-  filters: [{ field: "workspace", value: "ws-1" }],
+const { create, update, remove } = usePortfolioMutations({ queryKey });
+
+create.mutate({
+  data: { name: “My Portfolio”, base_currency: “USD”, date: “2026-01-08”, workspace: “ws-1”, securities: [] },
 });
 
-const { update } = usePortfolioMutations({ queryKey: fetch.queryKey });
+update.mutate({ id: “pf-123”, data: { name: “Renamed” } });
 
-update.mutate({
-  id: "pf-123",
-  data: { name: "Renamed Portfolio" },
-});
+remove.mutate({ id: “pf-123”, workspace: “ws-1” });
 ```
 
 ---
 
-## useRunWorkflowMutations
+## useFetchFile
 
-Mutation hook to execute workflows (async or sync).
+Fetches a single file by ID (TanStack Query `useQuery`). Alerts on error via `useAppAlert`.
+
+**Parameters**
+- `id` — file identifier (required)
+- `workspace` — workspace name (required)
+- `queryOptions` — TanStack Query options (optional; defaults: `refetchOnMount: “always”`, `staleTime: 0`, `gcTime: 0`)
 
 **Returns**
-- `runAsync`: starts an execution (non-blocking)
-- `runSync`: runs and returns the response immediately (preferred when you need output right away)
-
-**Behavior**
-- Uses `useAppAlert` for success/error messages.
-- Designed as mutations (workflow execution is a side-effect, not a query).
+- All standard TanStack Query fields
+- `queryKey` — stable cache key, pass to `useFileMutations` for automatic invalidation
+- `data` is a single `File` object; `File.data` is Base64-encoded content when present
 
 **Example**
 ```ts
-const { runSync } = useRunWorkflowMutations();
+const { data, isLoading, queryKey } = useFetchFile({
+  id: “file-123”,
+  workspace: “ws-1”,
+});
+// data -> File (data.data is Base64 string)
+```
 
-const result = await runSync.mutateAsync({
-  id: "wf-123",
-  workspace: "ws-1",
-  parameters: { UID: "ABC123" },
+---
+
+## useFetchFiles
+
+Fetches a paginated list of files (TanStack Query `useInfiniteQuery`) with cursor-based pagination. Automatically flattens all pages into a single `File[]` via `select`.
+
+**Parameters**
+- `filters` — filter clauses (optional; must include a `workspace` filter)
+- `order` — sort clauses (optional)
+- `projection` — fields to include (optional)
+- `pageSize` — items per page (optional, default `10`)
+- `queryOptions` — TanStack infinite query options (optional)
+
+**Returns**
+- `query` — full `useInfiniteQuery` result; `query.data` is a flat `File[]`
+- `queryKey` — stable cache key
+
+**Example**
+```ts
+const { query, queryKey } = useFetchFiles({
+  filters: [{ field: “workspace”, value: “ws-1” }],
+  pageSize: 20,
 });
 
-console.log(result);
+const files = query.data ?? [];
+```
+
+---
+
+## useFileMutations
+
+Mutation hook (TanStack Query) for file write operations: create / update / delete. Shows success/error alerts via `useAppAlert`. Optionally invalidates a query cache key after each successful mutation.
+
+**Parameters**
+- `queryKey` — cache key to invalidate on success (optional; typically the `queryKey` from `useFetchFiles`)
+
+**Returns**
+- `{ create, update, remove }` — TanStack `UseMutationResult` objects
+
+**Notes**
+- File content (`data.data`) must be raw Base64 — no `data:<mime>;base64,` prefix.
+- `remove` requires `{ id, workspace }`.
+
+**Example**
+```ts
+const { create, update, remove } = useFileMutations({ queryKey });
+
+create.mutate({
+  data: {
+    name: “report.txt”,
+    workspace: “ws-1”,
+    content_type: “text/plain”,
+    version: “1”,
+    link_uid: null,
+    data: “SGVsbG8gd29ybGQ=”,
+  },
+});
+
+update.mutate({ id: “file-123”, data: { name: “renamed.txt” } });
+
+remove.mutate({ id: “file-123”, workspace: “ws-1” });
+```
+
+---
+
+## useFetchWorkflow
+
+Fetches a single workflow by ID (TanStack Query `useQuery`). Alerts on error via `useAppAlert`.
+
+**Parameters**
+- `id` — workflow identifier (required)
+- `workspace` — workspace name (required)
+- `queryOptions` — TanStack Query options (optional; defaults: `refetchOnMount: “always”`, `staleTime: 0`, `gcTime: 0`)
+
+**Returns**
+- All standard TanStack Query fields
+- `queryKey` — stable cache key
+- `data` is a single `Workflow` object
+
+**Example**
+```ts
+const { data, isLoading } = useFetchWorkflow({ id: “wf-123”, workspace: “main” });
+// data -> Workflow
+```
+
+---
+
+## useFetchWorkflows
+
+Fetches a paginated list of workflows (TanStack Query `useInfiniteQuery`) with cursor-based pagination. Automatically flattens all pages into a single `Workflow[]` via `select`.
+
+**Parameters**
+- `workspace` — workspace name passed as a direct query param (optional)
+- `pageSize` — items per page (optional, default `10`)
+- `queryOptions` — TanStack infinite query options (optional)
+
+**Returns**
+- `query` — full `useInfiniteQuery` result; `query.data` is a flat `Workflow[]`
+- `queryKey` — stable cache key
+
+**Example**
+```ts
+const { query } = useFetchWorkflows({ workspace: “ws-1”, pageSize: 20 });
+
+const workflows = query.data ?? [];
+```
+
+---
+
+## useWorkflowRunMutations
+
+Mutation hook to execute a workflow asynchronously or synchronously. Shows error alerts via `useAppAlert`.
+
+**Returns**
+- `runAsync` — starts execution without waiting for result (non-blocking)
+- `runSync` — runs execution and returns the result immediately (preferred when output is needed)
+
+**Both accept**
+- `{ id, workspace, parameters }` — workflow ID, workspace name, and parameters object
+
+**Example**
+```ts
+const { runSync, runAsync } = useWorkflowRunMutations();
+
+// Synchronous — get the result immediately
+const result = await runSync.mutateAsync({
+  id: “wf-123”,
+  workspace: “ws-1”,
+  parameters: { UID: “ABC123” },
+});
+
+// Asynchronous — fire and forget
+runAsync.mutate({ id: “wf-123”, workspace: “ws-1”, parameters: {} });
+```
+
+---
+
+## useFetchWorkflowExecution
+
+Fetches a single workflow execution by ID (TanStack Query `useQuery`). Alerts on error via `useAppAlert`.
+
+**Parameters**
+- `workflowId` — workflow identifier (required)
+- `workflowExecutionId` — execution identifier (required)
+- `workspace` — workspace name (required)
+- `queryOptions` — TanStack Query options (optional; defaults: `refetchOnMount: “always”`, `staleTime: 0`, `gcTime: 0`)
+
+**Returns**
+- All standard TanStack Query fields
+- `queryKey` — stable cache key
+- `data` is a single `WorkflowExecution` object
+
+**Example**
+```ts
+const { data, isLoading } = useFetchWorkflowExecution({
+  workflowId: “wf-123”,
+  workflowExecutionId: “exec-456”,
+  workspace: “main”,
+});
+// data -> WorkflowExecution
+```
+
+---
+
+## useFetchWorkflowExecutions
+
+Fetches a paginated list of executions for a single workflow (TanStack Query `useInfiniteQuery`) with cursor-based pagination. Automatically flattens all pages into a single `WorkflowExecution[]` via `select`.
+
+**Parameters**
+- `workflowId` — workflow identifier (required)
+- `filters` — filter clauses (optional; must include a `workspace` filter)
+- `order` — sort clauses (optional)
+- `projection` — fields to include (optional)
+- `pageSize` — items per page (optional, default `10`)
+- `queryOptions` — TanStack infinite query options (optional)
+
+**Returns**
+- `query` — full `useInfiniteQuery` result; `query.data` is a flat `WorkflowExecution[]`
+- `queryKey` — stable cache key
+
+**Example**
+```ts
+const { query } = useFetchWorkflowExecutions({
+  workflowId: “wf-123”,
+  filters: [{ field: “workspace”, value: “main” }],
+  pageSize: 20,
+});
+
+const executions = query.data ?? [];
+```
+
+---
+
+## useFetchWorkerExecution
+
+Fetches a single worker execution by ID (TanStack Query `useQuery`). Alerts on error via `useAppAlert`.
+
+**Parameters**
+- `workflowId` — workflow identifier (required)
+- `workerExecutionId` — worker execution identifier (required)
+- `workspace` — workspace name (required)
+- `queryOptions` — TanStack Query options (optional; defaults: `refetchOnMount: “always”`, `staleTime: 0`, `gcTime: 0`)
+
+**Returns**
+- All standard TanStack Query fields
+- `queryKey` — stable cache key
+- `data` is a single `WorkerExecution` object
+
+**Example**
+```ts
+const { data, isLoading } = useFetchWorkerExecution({
+  workflowId: “wf-123”,
+  workerExecutionId: “wkex-456”,
+  workspace: “main”,
+});
+// data -> WorkerExecution
+```
+
+---
+
+## useFetchWorkerExecutions
+
+Fetches a paginated list of worker executions for a given workflow execution (TanStack Query `useInfiniteQuery`) with cursor-based pagination. Automatically flattens all pages into a single `WorkerExecution[]` via `select`.
+
+**Parameters**
+- `workflowId` — workflow identifier (required)
+- `workflowExecutionId` — workflow execution identifier (required)
+- `filters` — filter clauses (optional; must include a `workspace` filter)
+- `order` — sort clauses (optional)
+- `projection` — fields to include (optional)
+- `pageSize` — items per page (optional, default `10`)
+- `queryOptions` — TanStack infinite query options (optional)
+
+**Returns**
+- `query` — full `useInfiniteQuery` result; `query.data` is a flat `WorkerExecution[]`
+- `queryKey` — stable cache key
+
+**Example**
+```ts
+const { query } = useFetchWorkerExecutions({
+  workflowId: “wf-123”,
+  workflowExecutionId: “wfex-456”,
+  filters: [{ field: “workspace”, value: “main” }],
+  pageSize: 20,
+});
+
+const workerExecutions = query.data ?? [];
+```
+
+---
+
+## useFetchWorkspace
+
+Fetches a single workspace by name (TanStack Query `useQuery`). Alerts on error via `useAppAlert`.
+
+**Parameters**
+- `name` — workspace name (required)
+- `queryOptions` — TanStack Query options (optional; defaults: `refetchOnMount: “always”`, `staleTime: 0`, `gcTime: 0`)
+
+**Returns**
+- All standard TanStack Query fields
+- `queryKey` — stable cache key
+- `data` is a single `Workspace` object
+
+**Example**
+```ts
+const { data, isLoading } = useFetchWorkspace({ name: “main” });
+// data -> Workspace
+```
+
+---
+
+## useFetchWorkspaces
+
+Fetches a paginated list of workspaces (TanStack Query `useInfiniteQuery`) with cursor-based pagination. Automatically flattens all pages into a single `Workspace[]` via `select`.
+
+**Parameters**
+- `workspace` — current workspace name, passed as a query param (optional)
+- `pageSize` — items per page (optional, default `10`)
+- `queryOptions` — TanStack infinite query options (optional)
+
+**Returns**
+- `query` — full `useInfiniteQuery` result; `query.data` is a flat `Workspace[]`
+- `queryKey` — stable cache key
+
+**Example**
+```ts
+const { query } = useFetchWorkspaces({ workspace: “main”, pageSize: 20 });
+
+const workspaces = query.data ?? [];
 ```
