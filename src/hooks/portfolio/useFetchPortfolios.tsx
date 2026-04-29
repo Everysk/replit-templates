@@ -1,11 +1,11 @@
 import { useMemo } from "react";
 import { useInfiniteQuery, type UseInfiniteQueryOptions, type QueryKey } from "@tanstack/react-query";
 
-import useAxios from "../useAxios";
-import { getPortfolios } from "../../utils/api/portfolio";
-import type { FetchEntitiesParams } from "../../types/entityQuery";
-import type { Portfolio, PortfolioListResponse } from "../../types/portfolio";
-import { buildQueryKey, buildQueryObject } from "../../utils/api/entityQuery";
+import useAxios from "@src/hooks/useAxios";
+import { getPortfolios } from "@src/utils/api/portfolio";
+import type { FetchEntitiesParams } from "@src/types/entityQuery";
+import type { Portfolio, PortfolioListResponse } from "@src/types/portfolio";
+import { buildQueryKey, buildQueryObject } from "@src/utils/api/entityQuery";
 
 type PageToken = string | null;
 

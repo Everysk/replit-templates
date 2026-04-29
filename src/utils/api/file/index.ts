@@ -1,8 +1,8 @@
 import { isAxiosError, type AxiosInstance, type AxiosResponse } from "axios";
 
-import type { DefaultObject } from "../../types/defaultObject";
-import type { DeleteFileResponse, File, FileListResponse, FileSingleResponse } from "../../types/file";
-import type { DeleteEntityDefaultResponse, FilterExpression, QueryObject } from "../../types/entityQuery";
+import type { DefaultObject } from "@src/types/defaultObject";
+import type { DeleteFileResponse, File, FileListResponse, FileSingleResponse } from "@src/types/file";
+import type { DeleteEntityDefaultResponse, FilterExpression, QueryObject } from "@src/types/entityQuery";
 
 const baseUrl = "files";
 

@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import useAxios from "../useAxios";
-import useAppAlert from "../useAppAlert";
-import type { Portfolio } from "../../types/portfolio";
-import { deletePortfolio, postPortfolio, updatePortfolio } from "../../utils/api/portfolio";
+import useAxios from "@src/hooks/useAxios";
+import useAppAlert from "@src/hooks/useAppAlert";
+import type { Portfolio } from "@src/types/portfolio";
+import { deletePortfolio, postPortfolio, updatePortfolio } from "@src/utils/api/portfolio";
 
 
 type CreatePortfolioProps = {

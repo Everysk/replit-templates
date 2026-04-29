@@ -2,11 +2,11 @@ import { useEffect } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 
-import useAxios from "../useAxios";
-import useAppAlert from "../useAppAlert";
-import { getWorkerExecution } from "../../utils/api/workflow";
-import type { WorkerExecution } from "../../types/workflow";
-import type { EntityQueryOptions } from "../../types/entityQuery";
+import useAxios from "@src/hooks/useAxios";
+import useAppAlert from "@src/hooks/useAppAlert";
+import { getWorkerExecution } from "@src/utils/api/workflow";
+import type { WorkerExecution } from "@src/types/workflow";
+import type { EntityQueryOptions } from "@src/types/entityQuery";
 
 export type FetchWorkerExecutionProps<TData = WorkerExecution, TSelected = TData> = {
     workflowId: string;

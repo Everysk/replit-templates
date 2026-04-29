@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-import useAxios from "../useAxios";
-import useAppAlert from "../useAppAlert";
-import type { Portfolio } from "../../types/portfolio";
-import { getPortfolio } from "../../utils/api/portfolio";
-import type { EntityQueryOptions, FetchEntityParams } from "../../types/entityQuery";
+import useAxios from "@src/hooks/useAxios";
+import useAppAlert from "@src/hooks/useAppAlert";
+import type { Portfolio } from "@src/types/portfolio";
+import { getPortfolio } from "@src/utils/api/portfolio";
+import type { EntityQueryOptions, FetchEntityParams } from "@src/types/entityQuery";
 
 export type FetchPortfolioProps<TData = Portfolio, TSelected = TData> = FetchEntityParams<TData, TSelected>;
 

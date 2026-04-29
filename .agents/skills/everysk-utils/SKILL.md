@@ -1,6 +1,6 @@
 ---
 name: everysk-utils
-description: Built-in hooks and providers for this template. Use before writing any data-fetching, mutation, or broadcast logic. Covers all Everysk entity hooks (portfolio, datastore, file, workflow, workspace), broadcast channel utilities, and context providers. MANDATORY: load this skill before implementing any feature that reads or writes Everysk entities, listens to broadcast messages, or needs app config/alerts.
+description: Built-in hooks and providers for this template. Use before writing any data-fetching, mutation, or broadcast logic. Covers all Everysk entity hooks (portfolio, datastore, file, workflow, workspace), broadcast channel utilities, and context providers. MANDATORY: load this skill before implementing any feature that reads or writes Everysk entities, listens to broadcast messages, or needs app config/alerts. All filter values passed to entity hooks must be config-derived (useAppConfig()) or runtime-derived (state, props, or computed expression); string/number literals in value: are always bugs.
 ---
 
 # Everysk Template — Built-in Hooks & Providers
@@ -12,6 +12,124 @@ This template ships with ready-made hooks and providers for every common operati
 
 Before writing any data-fetching, mutation, or messaging code, check this skill first.
 If a hook already exists for the operation — use it. Creating a duplicate causes cache inconsistency, stale data, and broken broadcasts.
+
+---
+
+## ⛔ Filter Values — Know the Source
+
+**All filter values passed to any `useFetch*` or `useMutation*` hook MUST be either config-derived (`useAppConfig()`) or runtime-derived (state, props, or computed expression). A string or number literal in `value:` is always a bug — there are no exceptions.**
+
+> **Loophole to avoid:** wrapping a literal in a local `const` to satisfy the rule defeats the purpose. `const workspace = "my-workspace"` followed by `{ value: workspace }` is still wrong — environment-scoped values must come from `useAppConfig()`.
+
+Not all filter values are equal. Use the right source for each:
+
+| Filter field | Source | Why |
+|---|---|---|
+| `workspace` | `useAppConfig()` → `appEnvironmentVar.workspace` | Environment-specific — differs per deployment |
+| `link_uid` | `useAppConfig()` → `appEnvironmentVar.link_uid` | Configured per app instance |
+| `tags` (app scope) | `useAppConfig()` → `appEnvironmentVar.tags` | App always scoped to these tags — configured per instance |
+| `tags` (user-selected) | Component state / props | User picks a tag from a dropdown — dynamic |
+| `date`, `date_time` | Runtime-derived: `dayjs()` expression, state, or props | Never a literal — compute with dayjs |
+| `name`, etc. | Runtime-derived: state or props | Dynamic — driven by UI |
+
+When the user picks a tag from a dropdown, that is a **dynamic** value — it comes from state, not config:
+
+```ts
+const [selectedTag, setSelectedTag] = useState<string>("");
+const filters: FilterClause[] = [
+  { field: "workspace", value: workspace },   // config
+  { field: "tags", value: selectedTag },      // user-selected — state
+];
+```
+
+**Config values** (`workspace`, `link_uid`, fixed `tags`): store in `dev/app-config.dev.json`, read via `useAppConfig()`. Hardcoding them breaks silently when deployed to a different environment.
+
+```json
+{
+  "app": "my-everysk-app",
+  "workspace": "my-workspace",
+  "link_uid": "pf-abc123",
+  "tags": ["risk", "equity"]
+}
+```
+
+> If the app needs multiple workspaces or tag sets, use semantic keys (e.g. `main_workspace`, `trades_workspace`, `trades_tag`) instead of a single `workspace` key — then read them individually via `appEnvironmentVar.main_workspace`.
+
+**Reading config values** — always from `useAppConfig()`:
+
+```ts
+import dayjs from "dayjs";
+import { useAppConfig } from "@src/hooks/useAppConfig";
+
+const { appEnvironmentVar } = useAppConfig();
+const workspace = appEnvironmentVar.workspace as string;
+const linkUid = appEnvironmentVar.link_uid as string;
+// Prefer a named key (e.g. "equity_tag") over tags[0] when the app uses multiple tag sets
+const tag = appEnvironmentVar.equity_tag as string;
+```
+
+**Date ranges computed at render** — no user control, no `useState`:
+
+```ts
+import dayjs from "dayjs";
+
+const today = dayjs().format("YYYYMMDD");
+const thirtyDaysAgo = dayjs().subtract(30, "day").format("YYYYMMDD");
+const startOfYear = dayjs().startOf("year").format("YYYYMMDD");
+
+const filters: FilterClause[] = [
+  { field: "workspace", value: workspace },
+  { field: "date", op: ">=", value: thirtyDaysAgo },
+  { field: "date", op: "<=", value: today },
+];
+```
+
+**Date ranges controlled by the user** — user picks dates via UI, use `useState`:
+
+```ts
+import dayjs from "dayjs";
+import { useState } from "react";
+
+const [startDate, setStartDate] = useState(() => dayjs().startOf("year").format("YYYYMMDD"));
+const [endDate, setEndDate] = useState(() => dayjs().format("YYYYMMDD"));
+
+const filters: FilterClause[] = [
+  { field: "workspace", value: workspace },
+  { field: "link_uid", value: linkUid },
+  { field: "tags", value: tag },
+  { field: "date", op: ">=", value: startDate },
+  { field: "date", op: "<=", value: endDate },
+];
+```
+
+```ts
+// ❌ Never — string/number literals in value: are always a bug
+{ field: "workspace", value: "my-workspace" }
+{ field: "link_uid", value: "pf-abc123" }
+// ✅ Config-derived or state-derived — the only two valid sources
+{ field: "workspace", value: appEnvironmentVar.workspace as string }  // config
+{ field: "name", value: searchQuery }                                 // state
+{ field: "date", op: ">=", value: startDate }                        // state
+```
+
+In production, `window.APP_CONFIG` is injected by the Everysk server using `dev/app-config.dev.json` values sent during deploy — the same code works in both environments without changes.
+
+### When the source is unclear — ask
+
+The table covers obvious cases, but some values are genuinely ambiguous:
+
+| Value | Ambiguity |
+|---|---|
+| `name: "My Portfolio"` | Fixed label the app always filters by (config) or user-typed search term (state)? |
+| `link_uid` of a specific portfolio | App's main portfolio (config) or user-selected one (state)? |
+| Date range "last 30 days" | Calculated from state, or a configurable default from config? |
+| A tag like `"trade"` | App always scoped to this tag (config) or a variable page filter (state)? |
+
+When surrounding code or product context doesn't make the source obvious, **ask before writing any code**:
+
+> "Should `<value>` come from `useAppConfig()` (set per deploy) or component state (dynamic / user-controlled)?"
+
+String literals are never the answer. **You do not need to ask about the key name** — pick a clear semantic name (`main_portfolio_uid`, `default_status_filter`, etc.) and add it to `dev/app-config.dev.json`. Only the **config vs. state decision** needs user input.
 
 ---
 
@@ -27,6 +145,7 @@ If a hook already exists for the operation — use it. Creating a duplicate caus
 | Manual `LicenseManager.setLicenseKey(...)` | `<AgGridLicenseProvider>` |
 | `response.someValue` after `runSync.mutateAsync(...)` | `response.result.data.someValue` |
 | `response.result.someValue` after `runSync.mutateAsync(...)` | `response.result.data.someValue` |
+| `{ field: "anything", value: "literal-string" }` | `{ field: "anything", value: variableFromConfigOrState }` — string/number literals in `value:` are always a bug |
 
 ---
 
@@ -56,7 +175,7 @@ post({ type: "MY_EVENT", payload: { ... } });
 ```
 
 `useBroadcastChannel()` — `src/hooks/useBroadcastChannel.tsx` — requires `<BroadcastChannelProvider>` ancestor.
-`useBroadcastSubscription(handler)` — `src/hooks/useBroadcastSubscription.tsx` — higher-level: handles subscribe/unsubscribe lifecycle automatically.
+`useBroadcastSubscription(handler)` — `src/hooks/useBroadcastSubscription/index.tsx` — higher-level: handles subscribe/unsubscribe lifecycle automatically.
 
 ---
 
@@ -64,18 +183,20 @@ post({ type: "MY_EVENT", payload: { ... } });
 
 All hooks require the relevant providers in the tree (`QueryClientProvider`, `AppAlertProvider`, `BroadcastChannelProvider`). See Providers section below.
 
+> **In all examples below:** `workspace` is a variable from `useAppConfig()` — never a string literal. See "⛔ Filter Values — Know the Source" above.
+
 ### Portfolio — `src/hooks/portfolio/`
 
 **`useFetchPortfolio({ id, workspace, queryOptions? })`**
 Fetch a single portfolio. Returns `{ data: Portfolio, isLoading, queryKey, ... }`.
 ```ts
-const { data, isLoading, queryKey } = useFetchPortfolio({ id: "pf-123", workspace: "ws-1" });
+const { data, isLoading, queryKey } = useFetchPortfolio({ id: "pf-123", workspace });
 ```
 
 **`useFetchPortfolios({ filters?, order?, projection?, pageSize?, queryOptions? })`**
 Paginated list. Returns `{ query, queryKey }`. `query.data` is flat `Portfolio[]`.
 ```ts
-const { query } = useFetchPortfolios({ filters: [{ field: "workspace", value: "ws-1" }] });
+const { query } = useFetchPortfolios({ filters: [{ field: "workspace", value: workspace }] });
 const portfolios = query.data ?? [];
 ```
 
@@ -83,9 +204,9 @@ const portfolios = query.data ?? [];
 Returns `{ create, update, remove }`. Auto-invalidates `queryKey` on success. Shows alerts.
 ```ts
 const { create, update, remove } = usePortfolioMutations({ queryKey });
-create.mutate({ data: { name: "My Portfolio", base_currency: "USD", date: "2026-01-08", workspace: "ws-1", securities: [] } });
+create.mutate({ data: { name: "My Portfolio", base_currency: "USD", date: "2026-01-08", workspace, securities: [] } });
 update.mutate({ id: "pf-123", data: { name: "Renamed" } });
-remove.mutate({ id: "pf-123", workspace: "ws-1" });
+remove.mutate({ id: "pf-123", workspace });
 ```
 
 ---
@@ -95,14 +216,14 @@ remove.mutate({ id: "pf-123", workspace: "ws-1" });
 **`useFetchDatastore({ id, workspace, queryOptions? })`**
 Fetch a single datastore. Returns `DatastoreWithRows` — rows as `DefaultObject[]`.
 ```ts
-const { data, queryKey } = useFetchDatastore({ id: "ds-123", workspace: "ws-1" });
+const { data, queryKey } = useFetchDatastore({ id: "ds-123", workspace });
 // data.data -> [{ datastoreId: "ds-123", col1: "value", ... }]
 ```
 
 **`useFetchDatastores({ filters?, order?, projection?, pageSize?, queryOptions? })`**
 Paginated list. `query.data` is flat `DatastoreWithRows[]`.
 ```ts
-const { query } = useFetchDatastores({ filters: [{ field: "workspace", value: "ws-1" }] });
+const { query } = useFetchDatastores({ filters: [{ field: "workspace", value: workspace }] });
 const datastores = query.data ?? [];
 ```
 
@@ -110,8 +231,8 @@ const datastores = query.data ?? [];
 Returns `{ create, update, remove }`. `data.data` format: `[["col1","col2"],["val1","val2"]]`.
 ```ts
 const { create, update, remove } = useDatastoreMutations({ queryKey });
-create.mutate({ data: { name: "My DS", workspace: "ws-1", data: [["id","name"],["001","Alice"]] } });
-remove.mutate({ id: "ds-123", workspace: "ws-1" });
+create.mutate({ data: { name: "My DS", workspace, data: [["id","name"],["001","Alice"]] } });
+remove.mutate({ id: "ds-123", workspace });
 ```
 
 ---
@@ -121,20 +242,20 @@ remove.mutate({ id: "ds-123", workspace: "ws-1" });
 **`useFetchFile({ id, workspace, queryOptions? })`**
 Fetch a single file. `data.data` is Base64-encoded content.
 ```ts
-const { data, queryKey } = useFetchFile({ id: "file-123", workspace: "ws-1" });
+const { data, queryKey } = useFetchFile({ id: "file-123", workspace });
 ```
 
 **`useFetchFiles({ filters?, order?, projection?, pageSize?, queryOptions? })`**
 Paginated list. `query.data` is flat `File[]`.
 ```ts
-const { query } = useFetchFiles({ filters: [{ field: "workspace", value: "ws-1" }] });
+const { query } = useFetchFiles({ filters: [{ field: "workspace", value: workspace }] });
 ```
 
 **`useFileMutations({ queryKey? })`**
 Returns `{ create, update, remove }`. File content must be raw Base64 (no `data:<mime>;base64,` prefix).
 ```ts
 const { create } = useFileMutations({ queryKey });
-create.mutate({ data: { name: "report.txt", workspace: "ws-1", content_type: "text/plain", version: "1", link_uid: null, data: "SGVsbG8=" } });
+create.mutate({ data: { name: "report.txt", workspace, content_type: "text/plain", version: "1", link_uid: null, data: "SGVsbG8=" } });
 ```
 
 ---
@@ -144,13 +265,13 @@ create.mutate({ data: { name: "report.txt", workspace: "ws-1", content_type: "te
 **`useFetchWorkflow({ id, workspace, queryOptions? })`**
 Fetch a single workflow.
 ```ts
-const { data } = useFetchWorkflow({ id: "wf-123", workspace: "ws-1" });
+const { data } = useFetchWorkflow({ id: "wf-123", workspace });
 ```
 
 **`useFetchWorkflows({ workspace?, pageSize?, queryOptions? })`**
 Paginated list. `workspace` sent as direct query param (not inside a filter).
 ```ts
-const { query } = useFetchWorkflows({ workspace: "ws-1" });
+const { query } = useFetchWorkflows({ workspace });
 const workflows = query.data ?? [];
 ```
 
@@ -187,7 +308,7 @@ Returns `{ runAsync, runSync }`.
 
 ```ts
 const { runSync } = useWorkflowRunMutations();
-const response = await runSync.mutateAsync({ id: "wf-123", workspace: "ws-1", parameters: { UID: "ABC" } });
+const response = await runSync.mutateAsync({ id: "wf-123", workspace, parameters: { UID: "ABC" } });
 
 // ✅ Correct — workflow output lives in response.result.data
 const output = response.result.data;
@@ -200,23 +321,23 @@ console.log(response.result.summary);        // undefined — data is one level 
 
 **`useFetchWorkflowExecution({ workflowId, workflowExecutionId, workspace, queryOptions? })`**
 ```ts
-const { data } = useFetchWorkflowExecution({ workflowId: "wf-123", workflowExecutionId: "exec-456", workspace: "main" });
+const { data } = useFetchWorkflowExecution({ workflowId: "wf-123", workflowExecutionId: "exec-456", workspace });
 ```
 
 **`useFetchWorkflowExecutions({ workflowId, filters?, order?, projection?, pageSize?, queryOptions? })`**
 `filters` must include a `workspace` filter.
 ```ts
-const { query } = useFetchWorkflowExecutions({ workflowId: "wf-123", filters: [{ field: "workspace", value: "main" }] });
+const { query } = useFetchWorkflowExecutions({ workflowId: "wf-123", filters: [{ field: "workspace", value: workspace }] });
 ```
 
 **`useFetchWorkerExecution({ workflowId, workerExecutionId, workspace, queryOptions? })`**
 ```ts
-const { data } = useFetchWorkerExecution({ workflowId: "wf-123", workerExecutionId: "wkex-456", workspace: "main" });
+const { data } = useFetchWorkerExecution({ workflowId: "wf-123", workerExecutionId: "wkex-456", workspace });
 ```
 
 **`useFetchWorkerExecutions({ workflowId, workflowExecutionId, filters?, order?, projection?, pageSize?, queryOptions? })`**
 ```ts
-const { query } = useFetchWorkerExecutions({ workflowId: "wf-123", workflowExecutionId: "wfex-456", filters: [{ field: "workspace", value: "main" }] });
+const { query } = useFetchWorkerExecutions({ workflowId: "wf-123", workflowExecutionId: "wfex-456", filters: [{ field: "workspace", value: workspace }] });
 ```
 
 ---
@@ -230,13 +351,26 @@ const { data } = useFetchWorkspace({ name: "main" });
 
 **`useFetchWorkspaces({ workspace?, pageSize?, queryOptions? })`**
 ```ts
-const { query } = useFetchWorkspaces({ workspace: "main" });
+const { query } = useFetchWorkspaces({ workspace });
 const workspaces = query.data ?? [];
 ```
 
 ---
 
 ## Filters, Order & Projection
+
+### Always-fresh single-fetch hooks
+
+`useFetchPortfolio`, `useFetchWorkspace`, `useFetchWorkflowExecution`, and `useFetchWorkerExecution` ship with TanStack Query defaults of `refetchOnMount: "always"`, `staleTime: 0`, `gcTime: 0`. They re-fetch on every mount and never cache between unmounts. Override via `queryOptions` only if you have a concrete reason — caching these values can mask staleness in execution status / workspace metadata.
+
+### API endpoint constraints (gateway-enforced)
+
+These are easy to get wrong if you bypass the hooks and hit `/api` yourself:
+
+- `GET /workflows?workspace=<name>` — `workspace` is a **direct** query-string param, not a JSON `query` filter. `useFetchWorkflows` already handles this; raw axios calls must mirror it.
+- A standalone `GET /workflow_executions` endpoint **does not exist**. Executions are always nested under a workflow: `GET /workflows/{workflow_id}/workflow_executions[/{execution_id}]`.
+- Worker executions are nested two levels deep: `GET /workflows/{workflow_id}/workflow_executions/{execution_id}/worker_executions[/{worker_execution_id}]`.
+- All list endpoints require a `workspace` filter (or, for workflows, the direct query param above) — omitting it returns nothing or errors at the gateway.
 
 ### FilterClause — the filter object
 
@@ -252,12 +386,12 @@ All list hooks accept `filters: FilterClause[]`. Each clause has:
 
 | op | Meaning | Example |
 |----|---------|---------|
-| *(omitted)* or `"="` | equals | `{ field: "workspace", value: "ws-1" }` |
+| *(omitted)* or `"="` | equals | `{ field: "workspace", value: workspace }` |
 | `"!="` | not equals | `{ field: "status", op: "!=", value: "DELETED" }` |
 | `">"` | greater than | `{ field: "created", op: ">", value: 1700000000 }` |
-| `">="` | greater than or equal | `{ field: "date", op: ">=", value: "20260101" }` |
-| `"<"` | less than | `{ field: "created", op: "<", value: 1800000000 }` |
-| `"<="` | less than or equal | `{ field: "date", op: "<=", value: "20261231" }` |
+| `">="` | greater than or equal | `{ field: "date", op: ">=", value: startDate }` |
+| `"<"` | less than | `{ field: "created", op: "<", value: endTimestamp }` |
+| `"<="` | less than or equal | `{ field: "date", op: "<=", value: endDate }` |
 
 ### Common fields
 
@@ -274,90 +408,45 @@ All list hooks accept `filters: FilterClause[]`. Each clause has:
 ```ts
 // workspace only (minimum required)
 const filters: FilterClause[] = [
-  { field: "workspace", value: "ws-1" },
+  { field: "workspace", value: workspace },
 ];
 
 // filter by name
 const filters: FilterClause[] = [
-  { field: "workspace", value: "ws-1" },
+  { field: "workspace", value: workspace },
   { field: "name", value: "My Portfolio" },
 ];
 
-// filter by date range (format: "YYYYMMDD")
+// filter by date range (format: "YYYYMMDD") — use dayjs, never string literals
+import dayjs from "dayjs";
+const startDate = dayjs().startOf("year").format("YYYYMMDD");
+const endDate = dayjs().format("YYYYMMDD");
 const filters: FilterClause[] = [
-  { field: "workspace", value: "ws-1" },
-  { field: "date", op: ">=", value: "20260101" },
-  { field: "date", op: "<=", value: "20261231" },
+  { field: "workspace", value: workspace },
+  { field: "date", op: ">=", value: startDate },
+  { field: "date", op: "<=", value: endDate },
 ];
 
 // filter by link_uid (e.g. datastores linked to a specific portfolio)
 const filters: FilterClause[] = [
-  { field: "workspace", value: "ws-1" },
-  { field: "link_uid", value: "pf-abc123" },
+  { field: "workspace", value: workspace },
+  { field: "link_uid", value: linkUid },  // linkUid from useAppConfig()
 ];
 
 // filter by tag
 const filters: FilterClause[] = [
-  { field: "workspace", value: "ws-1" },
-  { field: "tags", value: "risk" },
+  { field: "workspace", value: workspace },
+  { field: "tags", value: tag },  // tag from useAppConfig() or state
 ];
 
 // combining multiple common fields
 const filters: FilterClause[] = [
-  { field: "workspace", value: "ws-1" },
-  { field: "link_uid", value: "pf-abc123" },
-  { field: "date", op: ">=", value: "20260101" },
-  { field: "date", op: "<=", value: "20261231" },
-];
-```
-
-### Filter values must come from app config — never hardcoded
-
-Values like `workspace`, `link_uid`, tag IDs, and other entity identifiers are **runtime configuration** — they differ between environments and deployments. Always store them in `dev/app-config.dev.json` and read them via `useAppConfig()`.
-
-**`dev/app-config.dev.json`** — add your config values here:
-```json
-{
-  "app": "my-everysk-app",
-  "workspace": "my-workspace",
-  "link_uid": "pf-abc123",
-  "tags": ["risk", "equity"]
-}
-```
-
-**Component** — read via `useAppConfig()` and pass to filters:
-```ts
-const { appEnvironmentVar } = useAppConfig();
-
-const workspace = appEnvironmentVar.workspace as string;
-const linkUid = appEnvironmentVar.link_uid as string;
-
-const filters: FilterClause[] = [
   { field: "workspace", value: workspace },
   { field: "link_uid", value: linkUid },
-];
-
-const { query } = useFetchDatastores({ filters });
-```
-
-```ts
-// ❌ Never hardcode — breaks when deployed to a different environment
-const filters = [
-  { field: "workspace", value: "my-workspace" },
-  { field: "link_uid", value: "pf-abc123" },
-];
-
-// ✅ Always read from appEnvironmentVar
-const { appEnvironmentVar } = useAppConfig();
-const filters = [
-  { field: "workspace", value: appEnvironmentVar.workspace as string },
-  { field: "link_uid", value: appEnvironmentVar.link_uid as string },
+  { field: "date", op: ">=", value: startDate },
+  { field: "date", op: "<=", value: endDate },
 ];
 ```
-
-In production, `window.APP_CONFIG` is injected by the Everysk server using the values from `dev/app-config.dev.json` sent during deploy — so the same code works in both environments without changes.
-
----
 
 ### Workspace filter is mandatory
 
@@ -365,12 +454,12 @@ Every list hook (`useFetchPortfolios`, `useFetchDatastores`, `useFetchFiles`, `u
 
 ```ts
 // ❌ Missing workspace — will not work
-const filters = [{ field: "status", value: "ACTIVE" }];
+const filters = [{ field: "name", value: searchQuery }];
 
 // ✅ Always include workspace first
 const filters = [
-  { field: "workspace", value: "ws-1" },
-  { field: "status", value: "ACTIVE" },
+  { field: "workspace", value: workspace },
+  { field: "name", value: searchQuery },
 ];
 ```
 
@@ -400,7 +489,7 @@ projection: ""       // omit — returns all fields (default)
 All list hooks (`useFetchPortfolios`, `useFetchDatastores`, `useFetchFiles`, `useFetchWorkflows`, `useFetchWorkflowExecutions`, `useFetchWorkerExecutions`, `useFetchWorkspaces`) use `useInfiniteQuery`. Use `query.hasNextPage` and `query.fetchNextPage` to load more:
 
 ```ts
-const { query } = useFetchPortfolios({ filters: [{ field: "workspace", value: "ws-1" }] });
+const { query } = useFetchPortfolios({ filters: [{ field: "workspace", value: workspace }] });
 
 const portfolios = query.data ?? [];
 const canLoadMore = query.hasNextPage && !query.isFetchingNextPage;
@@ -413,25 +502,29 @@ query.fetchNextPage();
 
 ## Utility Hooks
 
-**`useAxios()`** — `src/hooks/useAxios.tsx`
+**`useAxios(url?: string | null)`** — `src/hooks/useAxios/index.tsx`
 Returns `{ api }`: memoized Axios instance with `baseURL=/api`. Do not create your own Axios instance.
+- Optional `url` is reserved for advanced overrides — leave it unset and call `api.get("/portfolios")` etc. with relative paths.
+- Request interceptor for GET/DELETE: extracts `workspace` from `params.query` (JSON string) and injects it as `params.workspace`.
 ```ts
 const { api } = useAxios();
 api.get("/some-endpoint").then(res => console.log(res.data));
 ```
 
 **`useAppAlert()`** — `src/hooks/useAppAlert.tsx`
-Returns `{ showAlert(options), hideAlert() }`. Use for success/error feedback — do not use `alert()` or custom toast libraries.
+Returns `{ showAlert(options), hideAlert() }`. Use for success/error feedback — do not use `alert()` or custom toast libraries. **Throws** if used outside `<AppAlertProvider>`.
 ```ts
 const { showAlert } = useAppAlert();
 showAlert({ message: "Saved.", severity: "success", autoHideDuration: 3000 });
 ```
 
 **`useAppConfig()`** — `src/hooks/useAppConfig.tsx`
-Returns `{ appId, appEnvironmentVar }`. Use to read runtime config — do not read `window.APP_CONFIG` directly.
+Returns `{ appId, appEnvironmentVar }`. Use to read runtime config — do not read `window.APP_CONFIG` directly. **Throws** if used outside `<AppConfigProvider>`.
 ```ts
 const { appId, appEnvironmentVar } = useAppConfig();
 ```
+
+Both `useBroadcastChannel()` and `useBroadcastSubscription()` **throw** if used outside `<BroadcastChannelProvider>` (the subscription hook delegates to `useBroadcastChannel` internally).
 
 ---
 
@@ -507,6 +600,12 @@ Do not invent message types that the shell does not send. Known shell → app me
 > Requires `npm install ag-grid-enterprise` before use.
 
 Manages the AG Grid Enterprise license via broadcast channel. Wrap only the subtree that uses AG Grid Enterprise.
+
+- Sends `REQUEST_AG_GRID_LICENSE` on mount; listens for `SEND_AG_GRID_LICENSE` from the Everysk shell and calls `LicenseManager.setLicenseKey(license)`.
+- **Production:** renders `<GlobalLoading>` until the license arrives.
+- **Development** (`import.meta.env.DEV`): renders children immediately.
+- If `ag-grid-enterprise` is not installed: dynamic import fails silently and children render normally.
+- Must be inside `<BroadcastChannelProvider>`.
 
 ```tsx
 // Install first: npm install ag-grid-enterprise

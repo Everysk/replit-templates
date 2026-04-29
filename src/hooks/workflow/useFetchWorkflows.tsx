@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import { useInfiniteQuery, type UseInfiniteQueryOptions, type QueryKey } from "@tanstack/react-query";
 
-import useAxios from "../useAxios";
-import { getWorkflows } from "../../utils/api/workflow";
-import type { Workflow, WorkflowListResponse } from "../../types/workflow";
+import useAxios from "@src/hooks/useAxios";
+import { getWorkflows } from "@src/utils/api/workflow";
+import type { Workflow, WorkflowListResponse } from "@src/types/workflow";
 
 type PageToken = string | null;
 

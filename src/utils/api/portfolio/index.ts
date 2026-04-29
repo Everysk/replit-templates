@@ -1,9 +1,9 @@
 import { isAxiosError, type AxiosInstance, type AxiosResponse } from "axios";
 
-import type { QueryObject } from "../../types/entityQuery";
-import type { DefaultObject } from "../../types/defaultObject";
-import type { FilterExpression } from "../../types/entityQuery";
-import type { Portfolio, PortfolioListResponse, PortfolioSingleResponse } from "../../types/portfolio";
+import type { QueryObject } from "@src/types/entityQuery";
+import type { DefaultObject } from "@src/types/defaultObject";
+import type { FilterExpression } from "@src/types/entityQuery";
+import type { Portfolio, PortfolioListResponse, PortfolioSingleResponse } from "@src/types/portfolio";
 
 const baseUrl = "portfolios";
 

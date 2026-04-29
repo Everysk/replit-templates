@@ -1,4 +1,4 @@
-import type { FilterClause, FilterExpression, EntityQueryParams, QueryObject } from "../../types/entityQuery";
+import type { FilterClause, FilterExpression, EntityQueryParams, QueryObject } from "@src/types/entityQuery";
 
 /**
  * toFilterTuple

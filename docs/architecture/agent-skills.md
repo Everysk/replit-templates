@@ -13,6 +13,7 @@ Skills bundled with the template for AI agents working in this codebase.
 - **web-design-guidelines** — Web design reference
 
 ## Development
+- **tdd** — TDD enforcement: Red→Green→Refactor cycle, co-located test files, deploy gate (`npm test` must pass). Stack: Vitest + Testing Library + MSW.
 - **vercel-react-best-practices** — 50+ React performance rules (rendering, rerenders, async, bundles, JS)
 - **vercel-react-native-skills** — React Native performance rules
 - **systematic-debugging** — Root cause tracing, test pressure, defense in depth

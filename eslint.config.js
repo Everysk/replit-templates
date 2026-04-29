@@ -3,10 +3,11 @@ import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
+import barrelFiles from 'eslint-plugin-barrel-files'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', '.replit_integration_files/**', '.local/**', 'coverage/**']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -18,6 +19,15 @@ export default defineConfig([
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
+    },
+  },
+  {
+    files: ['**/*.{ts,tsx}'],
+    plugins: { 'barrel-files': barrelFiles },
+    rules: {
+      'barrel-files/avoid-barrel-files': 'error',
+      'barrel-files/avoid-re-export-all': 'error',
+      'barrel-files/avoid-namespace-import': 'error',
     },
   },
 ])

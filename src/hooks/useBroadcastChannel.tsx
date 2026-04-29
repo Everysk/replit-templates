@@ -1,6 +1,6 @@
 import { useContext } from "react";
 
-import BroadcastChannelContext from "../contexts/broadcastChannelContext";
+import BroadcastChannelContext from "@src/contexts/broadcastChannelContext";
 
 /**
  * useBroadcastChannel

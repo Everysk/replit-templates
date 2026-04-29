@@ -1,3 +1,3 @@
 export type DefaultObject = {
-    [key: string]: any
+    [key: string]: unknown
 }

@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef } from "react";
 
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from "axios";
 
-import type { DefaultObject } from "../types/defaultObject";
-import type { FilterExpression } from "../types/entityQuery";
+import type { DefaultObject } from "@src/types/defaultObject";
+import type { FilterExpression } from "@src/types/entityQuery";
 
 /**
  * useAxios

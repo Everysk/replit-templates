@@ -1,4 +1,5 @@
 import { defineConfig, loadEnv } from "vite";
+import { resolve } from "path";
 
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
@@ -16,6 +17,12 @@ export default defineConfig(({ mode, command }) => {
   return {
     base: "./",
     envDir: root,
+
+    resolve: {
+      alias: {
+        "@src": resolve(__dirname, "src"),
+      },
+    },
 
     build: {
       outDir: "./dist",
@@ -40,5 +47,33 @@ export default defineConfig(({ mode, command }) => {
       envVarsLocationPlugin(),
       serveDevAppConfigPlugin(),
     ],
+
+    test: {
+      environment: "jsdom",
+      globals: true,
+      setupFiles: ["./src/test/setup.ts"],
+      include: ["src/**/*.test.{ts,tsx}"],
+      css: false,
+      alias: {
+        "ag-grid-enterprise": resolve(__dirname, "src/test/mocks/agGridEnterprise.ts"),
+      },
+      coverage: {
+        provider: "v8",
+        include: ["src/**/*.{ts,tsx}"],
+        exclude: [
+          "src/**/*.test.{ts,tsx}",
+          "src/types/**",
+          "src/test/**",
+          "src/main.tsx",
+          "src/pages/index.tsx",
+        ],
+        thresholds: {
+          statements: 89,
+          branches: 80,
+          functions: 92,
+          lines: 90,
+        },
+      },
+    },
   };
 });

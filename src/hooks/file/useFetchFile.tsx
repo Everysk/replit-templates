@@ -2,11 +2,11 @@ import { useEffect } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 
-import useAxios from "../useAxios";
-import type { File } from "../../types/file";
-import useAppAlert from "../useAppAlert";
-import { getFile } from "../../utils/api/file";
-import type { EntityQueryOptions, FetchEntityParams } from "../../types/entityQuery";
+import useAxios from "@src/hooks/useAxios";
+import type { File } from "@src/types/file";
+import useAppAlert from "@src/hooks/useAppAlert";
+import { getFile } from "@src/utils/api/file";
+import type { EntityQueryOptions, FetchEntityParams } from "@src/types/entityQuery";
 
 export type FetchFileProps<TData = File, TSelected = TData> = FetchEntityParams<TData, TSelected>;
 
