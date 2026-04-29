@@ -1,44 +1,48 @@
 # App Template (Everysk)
 
+## 🚫 AGENT MUST NEVER — Deploy
+
+All paths to deploy are **USER-ONLY**. The agent must not trigger a deploy through any mechanism:
+
+| ❌ Blocked | Reason |
+|---|---|
+| `restart_workflow("Deploy App")` or any workflow containing `deploy`, `publish`, `release` | Triggers production deploy |
+| `bash scripts/replit-deploy.sh` | Same deploy pipeline |
+| `python3 scripts/deploy.py` | Same deploy pipeline, called directly |
+| Any shell command containing `replit-deploy` or `deploy.py` | Any indirect path to the same pipeline |
+
+✅ **Agent CAN restart:** `Project`, `Start application` — these start the dev server only, no deploy.
+
+This applies in **all circumstances** — including when the user explicitly asks. Even if the user says "deploy", "publish", "send to production", or equivalent in any language: **do not run the deploy pipeline yourself**. Instead, point the user to the "Deploy App" button in the Replit Workflows tab. The deploy action must always be a human click, never an agent execution.
+
 ## ⛔ MANDATORY — Every `.ts` / `.tsx` edit
 
 Before touching any `.ts` or `.tsx` file: create the co-located `.test.tsx`, run `npm test` (RED must happen first), only then implement. No exceptions — not for trivial changes, not for demos, not for "quick fixes." Full workflow: `.agents/skills/tdd/SKILL.md`.
 
 `npm test` and `npm run lint` are **hard stops**: the task is not done until both pass.
 
-## Required Agent Skills (MANDATORY — Every Conversation)
+## Required Agent Skills
 
-**IMPORTANT:** The following agent skills **must** be loaded and used in every conversation, every new session, and on every fresh app import. These skills are installed in `.agents/skills/` and persist across all copies of this template. The agent must read and follow the relevant SKILL.md file before performing any work that matches the "When to Use" criteria.
+**Three skills are mandatory — load before starting any work:**
 
-| Skill | Path | When to Use |
-|-------|------|-------------|
-| **tdd** | `.agents/skills/tdd` | **Before writing or modifying any `.ts` or `.tsx` file.** Enforces Red→Green→Refactor cycle, co-located test file convention, and deploy gate (`npm test` must pass). |
-| **everysk-api** | `.agents/skills/everysk-api` | **Every conversation, every prompt, every session.** Comprehensive Everysk platform reference — REST API v2, Python SDK entities (Portfolio, Datastore, Report, File, CustomIndex, PrivateSecurity), 6 engines (MarketData, UserCache, Compliance, ExpressionEngine, UserLock, Cryptography), 13 core modules, WorkerBase patterns, 7 calculation endpoints, server/deployment, and 2026 brand identity (colors, typography, voice). **MANDATORY: Load SKILL.md AND read ALL 7 reference files** (7,690 total lines) on every invocation. All apps built from this template run on Everysk. |
-| **everysk-utils** | `.agents/skills/everysk-utils` | **Before implementing any feature** that fetches or mutates Everysk entities (portfolios, datastores, files, workflows, workspaces), listens to or sends broadcast messages, uses app config or alerts, or wires providers. Contains all built-in hooks and providers — read it before writing any data or messaging code to avoid duplicating utilities that already exist. |
-| **brainstorming** | `.agents/skills/brainstorming` | **Before any creative work** — creating features, building components, adding functionality, or modifying behavior. Always explore user intent, requirements, and design before implementation. |
-| **frontend-design** | `.agents/skills/frontend-design` | When building or styling any UI — web components, pages, dashboards, layouts. Produces polished, production-grade interfaces. **Must follow Everysk brand guidelines** from everysk-api branding reference. |
-| **ui-ux-pro-max** | `.agents/skills/ui-ux-pro-max` | When building or styling any React UI — comprehensive design system data (colors, typography, icons, charts, component patterns). Use alongside `frontend-design` and the Everysk branding reference. |
-| **systematic-debugging** | `.agents/skills/systematic-debugging` | When debugging any error, test failure, or unexpected behavior. Root-cause tracing, test pressure analysis, condition-based waiting patterns, and defense-in-depth. |
-| **vercel-react-best-practices** | `.agents/skills/vercel-react-best-practices` | When reviewing or optimizing React component performance. 50+ rules covering rendering, re-renders, async boundaries, bundle optimization, and JS patterns. |
-| **agent-tools** | `.agents/skills/agent-tools` | When running AI apps via inference.sh CLI — image generation, video creation, LLMs, search, 3D, Twitter automation (FLUX, Veo, Gemini, Grok, Claude, etc.). |
-| **pdf** | `.agents/skills/pdf` | When doing anything with PDF files — reading, merging, splitting, creating, filling forms, OCR, watermarks, encryption. |
-| **browser-use** | `.agents/skills/browser-use` | When automating browser interactions — screenshots, form fills, navigation, UI testing within the agent. |
-| **find-skills** | `.agents/skills/find-skills` | When the user asks "how do I do X" or looks for functionality that might exist as an installable skill. |
+| Skill | When | What it covers |
+|-------|------|----------------|
+| **tdd** — `.agents/skills/tdd` | Before any `.ts`/`.tsx` edit | Red→Green→Refactor, test co-location, deploy gate |
+| **everysk-utils** — `.agents/skills/everysk-utils` | Before any data/messaging code | All built-in hooks and providers — **never bypass with raw `axios`, `fetch`, or `new BroadcastChannel(...)`** |
+| **everysk-api** — `.agents/skills/everysk-api` | Every conversation | Platform API, entities, engines — load `SKILL.md`; read reference files only when working on the relevant feature |
 
-**Mandatory Rules (apply to every conversation, including new sessions and fresh imports):**
-- Always load the **tdd** skill before writing or modifying **any** `.ts` or `.tsx` file. Write the failing test first, confirm RED, implement, confirm GREEN. Run `npm test` before any deploy.
-- Always load the **everysk-api** skill at the start of **every conversation without exception** — this template is an Everysk platform app and all work requires platform knowledge. Do NOT skip this step, even for simple questions. **You MUST also read ALL 7 reference files** in `.agents/skills/everysk-api/references/` (sdk-entities, sdk-engines, core, api-reference, server, worker-patterns, branding) — these are not optional progressive-disclosure files, they are mandatory context for every session.
-- Always load the **everysk-utils** skill before implementing any feature that reads/writes Everysk entities or handles messaging. **Never create custom fetch utilities, axios calls, or BroadcastChannel instances** — use the built-in hooks. If you create a `new BroadcastChannel(...)` directly, the broadcast communication will break. If you write a custom `axios.get("/portfolios")` instead of `useFetchPortfolios`, the data will bypass the cache and mutations won't invalidate correctly.
-- Always load the **brainstorming** skill before starting any creative or feature-building work. Do NOT skip this step.
-- Always load the **frontend-design** skill when building or modifying any UI component or page. **Follow the Everysk 2026 brand guidelines** from the everysk-api branding reference (colors: #F2703B orange, #C9DDE8 blue, #A49F8C gray; fonts: Playfair Display/Space Grotesk/DM Sans).
-- Always load the **ui-ux-pro-max** skill when building or modifying React UI components, alongside **frontend-design** and the Everysk branding reference from `everysk-api`.
-- Always load the **systematic-debugging** skill when encountering any error, bug, or unexpected behavior — before attempting a fix.
-- Always load the **vercel-react-best-practices** skill before writing or reviewing React components to apply performance best practices.
-- Always load the **agent-tools** skill when running AI model inference, image/video generation, or web search via CLI.
-- Always load the **pdf** skill when the user mentions `.pdf` files or asks to produce/manipulate PDFs.
-- Always load the **browser-use** skill when performing any browser automation or UI interaction tasks.
-- Always load the **find-skills** skill when the user asks about discovering new capabilities or extending functionality.
-- These rules apply to **every conversation** — not just the first one. On every new conversation or fresh import, re-read this section and follow the skill requirements.
+**Load when relevant** (not every session):
+
+| Skill | When |
+|-------|------|
+| **brainstorming** | Before building new features or components |
+| **frontend-design** + **ui-ux-pro-max** | When building or styling UI |
+| **systematic-debugging** | When debugging errors or unexpected behavior |
+| **vercel-react-best-practices** | When reviewing or optimizing React components |
+| **agent-tools** | When running AI model inference or CLI tools |
+| **pdf** | When working with PDF files |
+| **browser-use** | When automating browser interactions |
+| **find-skills** | When looking for new capabilities |
 
 ---
 
@@ -114,9 +118,6 @@ const message = await anthropic.messages.create({
 - **On first run / initial setup / import:** Before starting any workflow, use the environment-secrets skill to check whether the required secrets (`EVERYSK_API_SID`, `EVERYSK_API_TOKEN`, and `EVERYSK_APP_NAME`) exist. If any are missing, immediately use `requestEnvVar` to prompt the user for all missing secrets — do NOT just tell the user to add them manually. Always proactively request them programmatically so the user gets an interactive prompt. Do not start workflows without these secrets — the app will fail with a clear error from `scripts/check-env.sh`.
 - **Always use Anthropic (Claude) via the user's own API key** for any AI/chat features in the app. Use the SDK and `ANTHROPIC_API_KEY` environment variable documented above.
 - **Never modify the `.replit` file or its workflows.** The `Project`, `Start application`, and `Deploy App` workflows are pre-configured and must not be changed. Port `5000` is required and hardcoded in `.replit`. Modifying `.replit` will break Replit's Run button and the Deploy workflow for every user who imports this template.
-- **Never run the "Deploy App" workflow automatically.** The `Deploy App` workflow runs `scripts/replit-deploy.sh` which deploys to **production**. It must ONLY be triggered when the user explicitly clicks "Deploy App" in the Replit Workflows tab. Do not run it on repo import, during initial setup, on first run, or as part of any automated or initialization step. The only workflow that should run on import or startup is **"Project"** (which starts the dev server).
-
-> The mandatory agent skills list lives at the top of this file under "Required Agent Skills".
 
 ### Optional Components
 
