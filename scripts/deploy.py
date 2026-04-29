@@ -153,8 +153,8 @@ def main():
         env_config = read_file(app_config_path)
         env_config = {k: v for k, v in env_config.items() if v}
         if env_config:
-            template['env'] = env_config
-            print(f'App env: {json.dumps(template["env"])}')
+            template['env_vars'] = env_config
+            print(f'App env: {json.dumps(template["env_vars"])}')
         else:
             print('App env: skipped (all values empty)')
     else:

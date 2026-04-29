@@ -7,7 +7,7 @@ import barrelFiles from 'eslint-plugin-barrel-files'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', '.replit_integration_files/**']),
+  globalIgnores(['dist', '.replit_integration_files/**', '.local/**']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
