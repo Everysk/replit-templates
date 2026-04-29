@@ -1,6 +1,6 @@
 ---
 name: everysk-utils
-description: Built-in hooks and providers for this template. Use before writing any data-fetching, mutation, or broadcast logic. Covers all Everysk entity hooks (portfolio, datastore, file, workflow, workspace), broadcast channel utilities, and context providers. MANDATORY: load this skill before implementing any feature that reads or writes Everysk entities, listens to broadcast messages, or needs app config/alerts. Environment-specific filter values (workspace, link_uid, fixed tags) must come from useAppConfig(), never hardcoded. Dynamic values (dates, status, user input) come from component state.
+description: Built-in hooks and providers for this template. Use before writing any data-fetching, mutation, or broadcast logic. Covers all Everysk entity hooks (portfolio, datastore, file, workflow, workspace), broadcast channel utilities, and context providers. MANDATORY: load this skill before implementing any feature that reads or writes Everysk entities, listens to broadcast messages, or needs app config/alerts. All filter values passed to entity hooks must be config-derived (useAppConfig()) or runtime-derived (state, props, or computed expression); string/number literals in value: are always bugs.
 ---
 
 # Everysk Template — Built-in Hooks & Providers
@@ -17,6 +17,10 @@ If a hook already exists for the operation — use it. Creating a duplicate caus
 
 ## ⛔ Filter Values — Know the Source
 
+**All filter values passed to any `useFetch*` or `useMutation*` hook MUST be either config-derived (`useAppConfig()`) or runtime-derived (state, props, or computed expression). A string or number literal in `value:` is always a bug — there are no exceptions.**
+
+> **Loophole to avoid:** wrapping a literal in a local `const` to satisfy the rule defeats the purpose. `const workspace = "my-workspace"` followed by `{ value: workspace }` is still wrong — environment-scoped values must come from `useAppConfig()`.
+
 Not all filter values are equal. Use the right source for each:
 
 | Filter field | Source | Why |
@@ -25,8 +29,8 @@ Not all filter values are equal. Use the right source for each:
 | `link_uid` | `useAppConfig()` → `appEnvironmentVar.link_uid` | Configured per app instance |
 | `tags` (app scope) | `useAppConfig()` → `appEnvironmentVar.tags` | App always scoped to these tags — configured per instance |
 | `tags` (user-selected) | Component state / props | User picks a tag from a dropdown — dynamic |
-| `date`, `date_time` | Component state / props / calculated | Dynamic — changes per user interaction |
-| `status`, `name`, etc. | Component state / props / user input | Dynamic — driven by UI |
+| `date`, `date_time` | Runtime-derived: `dayjs()` expression, state, or props | Never a literal — compute with dayjs |
+| `name`, etc. | Runtime-derived: state or props | Dynamic — driven by UI |
 
 When the user picks a tag from a dropdown, that is a **dynamic** value — it comes from state, not config:
 
@@ -51,34 +55,61 @@ const filters: FilterClause[] = [
 
 > If the app needs multiple workspaces or tag sets, use semantic keys (e.g. `main_workspace`, `trades_workspace`, `trades_tag`) instead of a single `workspace` key — then read them individually via `appEnvironmentVar.main_workspace`.
 
+**Reading config values** — always from `useAppConfig()`:
+
 ```ts
+import dayjs from "dayjs";
+import { useAppConfig } from "@src/hooks/useAppConfig";
+
 const { appEnvironmentVar } = useAppConfig();
 const workspace = appEnvironmentVar.workspace as string;
 const linkUid = appEnvironmentVar.link_uid as string;
-// Use a named key when possible (e.g. "equity_tag") — avoid [0] if the array has multiple values
-const tag = (appEnvironmentVar.tags as string[])[0];
+// Prefer a named key (e.g. "equity_tag") over tags[0] when the app uses multiple tag sets
+const tag = appEnvironmentVar.equity_tag as string;
+```
 
-// Dynamic values come from state/props — NOT from app config
-const [startDate, setStartDate] = useState("20260101");
-const [endDate, setEndDate] = useState("20261231");
+**Date ranges computed at render** — no user control, no `useState`:
+
+```ts
+import dayjs from "dayjs";
+
+const today = dayjs().format("YYYYMMDD");
+const thirtyDaysAgo = dayjs().subtract(30, "day").format("YYYYMMDD");
+const startOfYear = dayjs().startOf("year").format("YYYYMMDD");
 
 const filters: FilterClause[] = [
-  { field: "workspace", value: workspace },       // from config
-  { field: "link_uid", value: linkUid },          // from config
-  { field: "tags", value: tag },                  // from config
-  { field: "date", op: ">=", value: startDate },  // dynamic
-  { field: "date", op: "<=", value: endDate },    // dynamic
+  { field: "workspace", value: workspace },
+  { field: "date", op: ">=", value: thirtyDaysAgo },
+  { field: "date", op: "<=", value: today },
+];
+```
+
+**Date ranges controlled by the user** — user picks dates via UI, use `useState`:
+
+```ts
+import dayjs from "dayjs";
+import { useState } from "react";
+
+const [startDate, setStartDate] = useState(() => dayjs().startOf("year").format("YYYYMMDD"));
+const [endDate, setEndDate] = useState(() => dayjs().format("YYYYMMDD"));
+
+const filters: FilterClause[] = [
+  { field: "workspace", value: workspace },
+  { field: "link_uid", value: linkUid },
+  { field: "tags", value: tag },
+  { field: "date", op: ">=", value: startDate },
+  { field: "date", op: "<=", value: endDate },
 ];
 ```
 
 ```ts
-// ❌ Never hardcode config values — breaks on deploy
+// ❌ Never — string/number literals in value: are always a bug
 { field: "workspace", value: "my-workspace" }
 { field: "link_uid", value: "pf-abc123" }
-
-// ✅ Config values from useAppConfig(), dynamic values from state
-{ field: "workspace", value: appEnvironmentVar.workspace as string }
-{ field: "date", op: ">=", value: startDate }  // fine as state
+// ✅ Config-derived or state-derived — the only two valid sources
+{ field: "workspace", value: appEnvironmentVar.workspace as string }  // config
+{ field: "name", value: searchQuery }                                 // state
+{ field: "date", op: ">=", value: startDate }                        // state
 ```
 
 In production, `window.APP_CONFIG` is injected by the Everysk server using `dev/app-config.dev.json` values sent during deploy — the same code works in both environments without changes.
@@ -89,16 +120,16 @@ The table covers obvious cases, but some values are genuinely ambiguous:
 
 | Value | Ambiguity |
 |---|---|
-| `status: "ACTIVE"` | Fixed UI behavior (constant) vs. user-picked (state) vs. per-deploy (config)? |
+| `name: "My Portfolio"` | Fixed label the app always filters by (config) or user-typed search term (state)? |
 | `link_uid` of a specific portfolio | App's main portfolio (config) or user-selected one (state)? |
-| Date range "last 30 days" | Calculated dynamic, configurable default, or user-controlled? |
-| A tag like `"trade"` | App scope — always this tag (config) or a variable page filter (state)? |
+| Date range "last 30 days" | Calculated from state, or a configurable default from config? |
+| A tag like `"trade"` | App always scoped to this tag (config) or a variable page filter (state)? |
 
-When surrounding code or product context doesn't make the source obvious, **ask before persisting the value anywhere**:
+When surrounding code or product context doesn't make the source obvious, **ask before writing any code**:
 
-> "Where should `<value>` come from — `useAppConfig()` (environment-specific, set per deploy), component state (dynamic / user-controlled), or hardcoded (true app constant)?"
+> "Should `<value>` come from `useAppConfig()` (set per deploy) or component state (dynamic / user-controlled)?"
 
-**You do not need to ask about the key name.** Pick a clear semantic name (`main_portfolio_uid`, `default_status_filter`, etc.) and add it to `dev/app-config.dev.json`. Only the **source decision** needs user input.
+String literals are never the answer. **You do not need to ask about the key name** — pick a clear semantic name (`main_portfolio_uid`, `default_status_filter`, etc.) and add it to `dev/app-config.dev.json`. Only the **config vs. state decision** needs user input.
 
 ---
 
@@ -114,7 +145,7 @@ When surrounding code or product context doesn't make the source obvious, **ask 
 | Manual `LicenseManager.setLicenseKey(...)` | `<AgGridLicenseProvider>` |
 | `response.someValue` after `runSync.mutateAsync(...)` | `response.result.data.someValue` |
 | `response.result.someValue` after `runSync.mutateAsync(...)` | `response.result.data.someValue` |
-| `workspace: "my-workspace"` or hardcoded `link_uid`/`tags` | `workspace: appEnvironmentVar.workspace` from `useAppConfig()` — dates and dynamic values are fine as state |
+| `{ field: "anything", value: "literal-string" }` | `{ field: "anything", value: variableFromConfigOrState }` — string/number literals in `value:` are always a bug |
 
 ---
 
@@ -358,9 +389,9 @@ All list hooks accept `filters: FilterClause[]`. Each clause has:
 | *(omitted)* or `"="` | equals | `{ field: "workspace", value: workspace }` |
 | `"!="` | not equals | `{ field: "status", op: "!=", value: "DELETED" }` |
 | `">"` | greater than | `{ field: "created", op: ">", value: 1700000000 }` |
-| `">="` | greater than or equal | `{ field: "date", op: ">=", value: "20260101" }` |
-| `"<"` | less than | `{ field: "created", op: "<", value: 1800000000 }` |
-| `"<="` | less than or equal | `{ field: "date", op: "<=", value: "20261231" }` |
+| `">="` | greater than or equal | `{ field: "date", op: ">=", value: startDate }` |
+| `"<"` | less than | `{ field: "created", op: "<", value: endTimestamp }` |
+| `"<="` | less than or equal | `{ field: "date", op: "<=", value: endDate }` |
 
 ### Common fields
 
@@ -386,31 +417,34 @@ const filters: FilterClause[] = [
   { field: "name", value: "My Portfolio" },
 ];
 
-// filter by date range (format: "YYYYMMDD")
+// filter by date range (format: "YYYYMMDD") — use dayjs, never string literals
+import dayjs from "dayjs";
+const startDate = dayjs().startOf("year").format("YYYYMMDD");
+const endDate = dayjs().format("YYYYMMDD");
 const filters: FilterClause[] = [
   { field: "workspace", value: workspace },
-  { field: "date", op: ">=", value: "20260101" },
-  { field: "date", op: "<=", value: "20261231" },
+  { field: "date", op: ">=", value: startDate },
+  { field: "date", op: "<=", value: endDate },
 ];
 
 // filter by link_uid (e.g. datastores linked to a specific portfolio)
 const filters: FilterClause[] = [
   { field: "workspace", value: workspace },
-  { field: "link_uid", value: "pf-abc123" },
+  { field: "link_uid", value: linkUid },  // linkUid from useAppConfig()
 ];
 
 // filter by tag
 const filters: FilterClause[] = [
   { field: "workspace", value: workspace },
-  { field: "tags", value: "risk" },
+  { field: "tags", value: tag },  // tag from useAppConfig() or state
 ];
 
 // combining multiple common fields
 const filters: FilterClause[] = [
   { field: "workspace", value: workspace },
-  { field: "link_uid", value: "pf-abc123" },
-  { field: "date", op: ">=", value: "20260101" },
-  { field: "date", op: "<=", value: "20261231" },
+  { field: "link_uid", value: linkUid },
+  { field: "date", op: ">=", value: startDate },
+  { field: "date", op: "<=", value: endDate },
 ];
 ```
 
@@ -420,12 +454,12 @@ Every list hook (`useFetchPortfolios`, `useFetchDatastores`, `useFetchFiles`, `u
 
 ```ts
 // ❌ Missing workspace — will not work
-const filters = [{ field: "status", value: "ACTIVE" }];
+const filters = [{ field: "name", value: searchQuery }];
 
 // ✅ Always include workspace first
 const filters = [
   { field: "workspace", value: workspace },
-  { field: "status", value: "ACTIVE" },
+  { field: "name", value: searchQuery },
 ];
 ```
 
