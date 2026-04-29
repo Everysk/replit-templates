@@ -1,16 +1,10 @@
 # App Template (Everysk)
 
-## ⛔ STOP — MANDATORY BEFORE ANY CODE CHANGE
+## ⛔ MANDATORY — Every `.ts` / `.tsx` edit
 
-**Before editing or creating ANY `.ts` / `.tsx` file:**
+Before touching any `.ts` or `.tsx` file: create the co-located `.test.tsx`, run `npm test` (RED must happen first), only then implement. No exceptions — not for trivial changes, not for demos, not for "quick fixes." Full workflow: `.agents/skills/tdd/SKILL.md`.
 
-1. Read `.agents/skills/tdd/SKILL.md` and follow it.
-2. Write the failing test (`*.test.tsx`) co-located with the source — RED first.
-3. Run `npm test` and confirm the test fails for the right reason.
-4. Only then implement until GREEN.
-5. Run `npm run lint` — must be clean before closing the task.
-
-No exceptions, no matter how small the change. If you're about to type code into a `.ts` / `.tsx` file without a failing test in place, stop and write the test first.
+`npm test` and `npm run lint` are **hard stops**: the task is not done until both pass.
 
 ## Required Agent Skills (MANDATORY — Every Conversation)
 

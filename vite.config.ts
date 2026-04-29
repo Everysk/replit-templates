@@ -57,6 +57,23 @@ export default defineConfig(({ mode, command }) => {
       alias: {
         "ag-grid-enterprise": resolve(__dirname, "src/test/mocks/agGridEnterprise.ts"),
       },
+      coverage: {
+        provider: "v8",
+        include: ["src/**/*.{ts,tsx}"],
+        exclude: [
+          "src/**/*.test.{ts,tsx}",
+          "src/types/**",
+          "src/test/**",
+          "src/main.tsx",
+          "src/pages/index.tsx",
+        ],
+        thresholds: {
+          statements: 89,
+          branches: 80,
+          functions: 92,
+          lines: 90,
+        },
+      },
     },
   };
 });
