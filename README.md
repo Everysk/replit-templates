@@ -820,25 +820,30 @@ const workflows = query.data ?? [];
 
 ## useWorkflowRunMutations
 
-Mutation hook to execute a workflow asynchronously or synchronously. Shows error alerts via `useAppAlert`.
+Mutation hook to run a workflow. Synchronous execution (`synchronous: true`) is intentionally not used — the workflow is started asynchronously and, when output is needed, its execution is polled until it reaches a terminal state. Shows error alerts via `useAppAlert`.
 
 **Returns**
-- `runAsync` — starts execution without waiting for result (non-blocking)
-- `runSync` — runs execution and returns the result immediately (preferred when output is needed)
+- `runAsync` — starts execution without waiting for the result (fire-and-forget)
+- `runAndGetResult` — starts the workflow, polls until it finishes, then fetches the ender worker output (preferred when output is needed)
 
 **Both accept**
 - `{ id, workspace, parameters }` — workflow ID, workspace name, and parameters object
+- `runAndGetResult` also accepts optional `pollOptions` — `{ intervalMs?, timeoutMs?, signal? }` (defaults: 2s interval, 5min timeout)
+
+**Resolved shape (`runAndGetResult`)**
+- `{ execution, workerExecution, result }` — `execution` is the terminal workflow execution metadata, `workerExecution` is the ender worker execution (or `null`), and `result` is the ender worker output payload (or `null`). Read the workflow output from `result.data`.
 
 **Example**
 ```ts
-const { runSync, runAsync } = useWorkflowRunMutations();
+const { runAndGetResult, runAsync } = useWorkflowRunMutations();
 
-// Synchronous — get the result immediately
-const result = await runSync.mutateAsync({
+// Start, poll until terminal, then fetch the output
+const { result } = await runAndGetResult.mutateAsync({
   id: “wf-123”,
   workspace: “ws-1”,
   parameters: { UID: “ABC123” },
 });
+const output = result?.data; // workflow-specific output — shape defined by the ender worker
 
 // Asynchronous — fire and forget
 runAsync.mutate({ id: “wf-123”, workspace: “ws-1”, parameters: {} });

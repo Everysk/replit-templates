@@ -143,8 +143,8 @@ String literals are never the answer. **You do not need to ask about the key nam
 | Custom `useEffect` + `axios` to fetch a workflow | `useFetchWorkflow({ id, workspace })` |
 | Custom `useState` + `fetch` for files | `useFetchFile({ id, workspace })` |
 | Manual `LicenseManager.setLicenseKey(...)` | `<AgGridLicenseProvider>` |
-| `response.someValue` after `runSync.mutateAsync(...)` | `response.result.data.someValue` |
-| `response.result.someValue` after `runSync.mutateAsync(...)` | `response.result.data.someValue` |
+| `response.someValue` after `runAndGetResult.mutateAsync(...)` | `response.result.data.someValue` |
+| `response.result.someValue` after `runAndGetResult.mutateAsync(...)` | `response.result.data.someValue` |
 | `{ field: "anything", value: "literal-string" }` | `{ field: "anything", value: variableFromConfigOrState }` — string/number literals in `value:` are always a bug |
 
 ---
@@ -276,23 +276,30 @@ const workflows = query.data ?? [];
 ```
 
 **`useWorkflowRunMutations()`**
-Returns `{ runAsync, runSync }`.
-- **`runSync`** — waits for the workflow to finish and returns the full response including `result.data`. Use this when you need the output.
-- **`runAsync`** — fires the workflow and returns immediately without waiting. `result.data` will be empty or absent — do not try to read output from it.
+Returns `{ runAsync, runAndGetResult }`.
+- **`runAndGetResult`** — starts the workflow **asynchronously**, polls the execution until it reaches a terminal status, then fetches the ender worker output. Use this when you need the output. Synchronous execution (`synchronous: true`) is intentionally **not** used (it risks request timeouts on long workflows).
+- **`runAsync`** — fires the workflow and returns immediately without waiting. There is no `result` to read from it.
 
-**Response shape:**
+Both accept `{ id, workspace, parameters }`. `runAndGetResult` also accepts optional `pollOptions`:
+- `intervalMs` — delay between status checks (default `2000`)
+- `timeoutMs` — max wait before giving up (default `300000` = 5 min)
+- `signal` — `AbortSignal` to cancel polling (e.g. on unmount)
+
+**Response shape (`runAndGetResult`):**
 ```json
 {
-  "workflow_execution": {
+  "execution": {
     "id": "wfex_...",
     "status": "COMPLETED",
     "run_status": "SUCCEEDED",
     "workflow_id": "wrkf_...",
-    "workflow_name": "...",
     "workspace": "...",
     "duration": 15.78,
-    "started": 1777316506,
-    "resume": [ /* array of worker execution summaries */ ]
+    "ender_worker_execution_id": "wkex_..."
+  },
+  "workerExecution": {
+    "id": "wkex_...",
+    "result": { "log": [], "status": "OK", "data": { /* ... */ } }
   },
   "result": {
     "log": [],
@@ -302,17 +309,18 @@ Returns `{ runAsync, runSync }`.
 }
 ```
 
-- `response.workflow_execution` — execution metadata (status, duration, worker trace via `resume`)
-- `response.result.status` — `"OK"` on success
+- `response.execution` — terminal workflow execution metadata (`run_status`, duration, `ender_worker_execution_id`)
+- `response.workerExecution` — the ender worker execution (or `null` if the workflow referenced none)
+- `response.result` — the ender worker output payload (`workerExecution.result`), or `null`
 - `response.result.data` — **the actual output values, defined by each workflow's Ender worker**
 
 ```ts
-const { runSync } = useWorkflowRunMutations();
-const response = await runSync.mutateAsync({ id: "wf-123", workspace, parameters: { UID: "ABC" } });
+const { runAndGetResult } = useWorkflowRunMutations();
+const response = await runAndGetResult.mutateAsync({ id: "wf-123", workspace, parameters: { UID: "ABC" } });
 
 // ✅ Correct — workflow output lives in response.result.data
-const output = response.result.data;
-console.log(output.summary); // e.g. [["Issuer", "Notional", ...], [...]]
+const output = response.result?.data;
+console.log(output?.summary); // e.g. [["Issuer", "Notional", ...], [...]]
 
 // ❌ Wrong — these are always undefined
 console.log(response.summary);               // undefined — not at top level

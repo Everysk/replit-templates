@@ -1,26 +1,28 @@
+import type { ReactNode } from "react";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
 import useWorkflowRunMutations from "./useRunWorkflowMutations";
 
 const mocks = vi.hoisted(() => ({
     api: {},
     showAlert: vi.fn(),
     runWorkflow: vi.fn(),
-    runWorkflowSync: vi.fn(),
+    runWorkflowAndGetResult: vi.fn(),
 }));
 
 vi.mock("@src/hooks/useAxios", () => ({ default: () => ({ api: mocks.api }) }));
 vi.mock("@src/hooks/useAppAlert", () => ({ default: () => ({ showAlert: mocks.showAlert }) }));
 vi.mock("@src/utils/api/workflow", () => ({
     runWorkflow: mocks.runWorkflow,
-    runWorkflowSync: mocks.runWorkflowSync,
+    runWorkflowAndGetResult: mocks.runWorkflowAndGetResult,
 }));
 
 const createWrapper = () => {
     const queryClient = new QueryClient({
         defaultOptions: { mutations: { retry: false } },
     });
-    const Wrapper = ({ children }: { children: React.ReactNode }) => (
+    const Wrapper = ({ children }: { children: ReactNode }) => (
         <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     );
     return { Wrapper };
@@ -80,51 +82,54 @@ describe("runAsync", () => {
     });
 });
 
-describe("runSync", () => {
-    it("calls runWorkflowSync with id, workspace and parameters", async () => {
+describe("runAndGetResult", () => {
+    it("calls runWorkflowAndGetResult with id, workspace, parameters and pollOptions", async () => {
         const { Wrapper } = createWrapper();
-        mocks.runWorkflowSync.mockResolvedValue({ result: "ok" });
+        mocks.runWorkflowAndGetResult.mockResolvedValue({ execution: {}, workerExecution: null, result: { ok: true } });
+        const pollOptions = { intervalMs: 500, timeoutMs: 10000 };
 
         const { result } = renderHook(() => useWorkflowRunMutations(), { wrapper: Wrapper });
-        result.current.runSync.mutate({ id: "wf-1", workspace: "ws-1", parameters: { key: "val" } });
+        result.current.runAndGetResult.mutate({ id: "wf-1", workspace: "ws-1", parameters: { key: "val" }, pollOptions });
 
-        await waitFor(() => expect(result.current.runSync.isSuccess).toBe(true));
-        expect(mocks.runWorkflowSync).toHaveBeenCalledWith(mocks.api, "wf-1", "ws-1", { key: "val" });
+        await waitFor(() => expect(result.current.runAndGetResult.isSuccess).toBe(true));
+        expect(mocks.runWorkflowAndGetResult).toHaveBeenCalledWith(mocks.api, "wf-1", "ws-1", { key: "val" }, pollOptions);
     });
 
-    it("does not show a success alert on success", async () => {
+    it("exposes the resolved result as mutation data", async () => {
         const { Wrapper } = createWrapper();
-        mocks.runWorkflowSync.mockResolvedValue({ result: "ok" });
+        const payload = { execution: { id: "exec-1" }, workerExecution: { id: "wex-1" }, result: { foo: "bar" } };
+        mocks.runWorkflowAndGetResult.mockResolvedValue(payload);
 
         const { result } = renderHook(() => useWorkflowRunMutations(), { wrapper: Wrapper });
-        result.current.runSync.mutate({ id: "wf-1", workspace: "ws-1", parameters: {} });
+        result.current.runAndGetResult.mutate({ id: "wf-1", workspace: "ws-1", parameters: {} });
 
-        await waitFor(() => expect(result.current.runSync.isSuccess).toBe(true));
+        await waitFor(() => expect(result.current.runAndGetResult.isSuccess).toBe(true));
+        expect(result.current.runAndGetResult.data).toEqual(payload);
         expect(mocks.showAlert).not.toHaveBeenCalled();
     });
 
     it("shows the Error message in the alert on failure", async () => {
         const { Wrapper } = createWrapper();
-        mocks.runWorkflowSync.mockRejectedValue(new Error("Execution timeout"));
+        mocks.runWorkflowAndGetResult.mockRejectedValue(new Error("Workflow execution failed"));
 
         const { result } = renderHook(() => useWorkflowRunMutations(), { wrapper: Wrapper });
-        result.current.runSync.mutate({ id: "wf-1", workspace: "ws-1", parameters: {} });
+        result.current.runAndGetResult.mutate({ id: "wf-1", workspace: "ws-1", parameters: {} });
 
-        await waitFor(() => expect(result.current.runSync.isError).toBe(true));
+        await waitFor(() => expect(result.current.runAndGetResult.isError).toBe(true));
         expect(mocks.showAlert).toHaveBeenCalledWith({
             severity: "error",
-            message: "Execution timeout",
+            message: "Workflow execution failed",
         });
     });
 
     it("shows fallback message when the thrown value is not an Error", async () => {
         const { Wrapper } = createWrapper();
-        mocks.runWorkflowSync.mockRejectedValue("unknown");
+        mocks.runWorkflowAndGetResult.mockRejectedValue("unknown");
 
         const { result } = renderHook(() => useWorkflowRunMutations(), { wrapper: Wrapper });
-        result.current.runSync.mutate({ id: "wf-1", workspace: "ws-1", parameters: {} });
+        result.current.runAndGetResult.mutate({ id: "wf-1", workspace: "ws-1", parameters: {} });
 
-        await waitFor(() => expect(result.current.runSync.isError).toBe(true));
+        await waitFor(() => expect(result.current.runAndGetResult.isError).toBe(true));
         expect(mocks.showAlert).toHaveBeenCalledWith({
             severity: "error",
             message: "Unable to run the workflow. Please try again.",

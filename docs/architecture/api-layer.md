@@ -8,8 +8,9 @@ All functions accept an `AxiosInstance` as first param (from `useAxios()`).
 | workflowList.ts | `getWorkflows(api, workspace?)` | GET /workflows |
 | workflowList.ts | `getWorkflowExecutions(api, wfId)` | GET /workflows/{id}/workflow_executions |
 | workflowList.ts | `getWorkspaces(api)` | GET /workspaces |
-| workflow.ts | `runWorkflow(api, id, workspace, parameters)` | POST /workflows/{id}/run |
-| workflow.ts | `runWorkflowSync(api, ...)` | POST /workflows/{id}/run (sync) |
+| workflow.ts | `runWorkflow(api, id, workspace, parameters)` | POST /workflows/{id}/run (async start) |
+| workflow.ts | `pollWorkflowExecution(api, wfId, execId, workspace, options?)` | GET /workflows/{id}/workflow_executions (poll until terminal) |
+| workflow.ts | `runWorkflowAndGetResult(api, id, workspace, parameters, pollOptions?)` | start → poll → fetch ender worker result |
 | portfolio.ts | `getPortfolio`, `getPortfolios`, `postPortfolio`, `updatePortfolio`, `deletePortfolio` | /portfolios |
 | datastore.ts | `getDatastore`, `getDatastores`, `postDatastore`, `updateDatastore`, `deleteDatastore` | /datastores |
 | file.ts | file CRUD | /files |
